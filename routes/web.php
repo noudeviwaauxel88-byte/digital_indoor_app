@@ -134,4 +134,33 @@ Route::get('/setup-superadmin', function () {
         <p>Veuillez vous déconnecter puis vous reconnecter sur l'application.</p>
     ";
 });
+
+// Route temporaire pour vous attribuer la casse exacte du rôle SuperAdmin
+Route::get('/fix-superadmin', function () {
+    // 1. Réinitialiser le cache de Spatie
+    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+    // 2. Créer le rôle exact 'SuperAdmin' (avec S et A majuscules, sans espace)
+    $role = \Spatie\Permission\Models\Role::firstOrCreate([
+        'name' => 'SuperAdmin',
+        'guard_name' => 'web'
+    ]);
+
+    // 3. Récupérer votre compte
+    $user = \App\Models\User::where('email', 'noudeviwaauxel88@gmail.com')->first();
+
+    if (!$user) {
+        return "Utilisateur introuvable avec cet email.";
+    }
+
+    // 4. Lui attribuer ce rôle
+    $user->assignRole($role);
+
+    // 5. Nettoyer le cache système
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+
+    return "<h1>SUCCÈS !</h1><p>Le rôle <b>SuperAdmin</b> a été attribué à " . $user->email . ".</p><p>Déconnectez-vous puis reconnectez-vous sur l'application.</p>";
+});
+
 require __DIR__.'/auth.php';
