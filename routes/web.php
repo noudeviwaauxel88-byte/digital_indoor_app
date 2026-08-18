@@ -93,5 +93,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
+// Route temporaire pour vous passer en SUPERADMIN et débloquer le menu
+Route::get('/setup-superadmin', function () {
+    $user = \App\Models\User::where('email', 'noudeviwaauxel88@gmail.com')->first();
 
+    if (!$user) {
+        return "Utilisateur introuvable.";
+    }
+
+    // 1. Mise à jour de toutes les colonnes/attributs de rôle possibles dans la table 'users'
+    if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'role')) {
+        $user->role = 'superadmin'; // ou 'Superadmin', 'SUPERADMIN'
+    }
+    
+    if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'is_admin')) {
+        $user->is_admin = true;
+    }
+
+    $user->save();
+
+    // 2. Attribution via Spatie Permission si le package est configuré
+    if (class_exists(\Spatie\Permission\Models\Role::class)) {
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        
+        $roles = ['superadmin', 'Superadmin', 'SUPERADMIN', 'Super Admin', 'admin'];
+        foreach ($roles as $r) {
+            $roleObj = \Spatie\Permission\Models\Role::firstOrCreate(['name' => $r, 'guard_name' => 'web']);
+            $user->assignRole($roleObj);
+        }
+    }
+
+    // 3. Vidage complet du cache Laravel
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+
+    return "
+        <h2> Configuration réussie pour {$user->email} !</h2>
+        <p><b>Attributs de l'utilisateur :</b> " . json_encode($user->toArray()) . "</p>
+        <p>Veuillez vous déconnecter puis vous reconnecter sur l'application.</p>
+    ";
+});
 require __DIR__.'/auth.php';
