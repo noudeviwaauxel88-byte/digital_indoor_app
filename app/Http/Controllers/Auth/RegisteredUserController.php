@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Role; // Import de la classe Role
 
 class RegisteredUserController extends Controller
 {
@@ -30,8 +31,8 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'firstname' => ['required', 'string', 'max:255'], // Ajouté
-            'lastname' => ['required', 'string', 'max:255'],  // Ajouté
+            'firstname' => ['required', 'string', 'max:255'],
+            'lastname' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
@@ -39,13 +40,14 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'firstname' => $request->firstname,
             'lastname' => $request->lastname,
-            'name' => $request->firstname . ' ' . $request->lastname, // Champ 'name' combiné
+            'name' => $request->firstname . ' ' . $request->lastname,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
-        // --- SÉCURITÉ : Attribution automatique du rôle 'Employe' ---
-        $user->assignRole('Employe');
+        // --- SÉCURITÉ : Récupère ou crée le rôle 'Employe' puis l'attribue ---
+        $role = Role::firstOrCreate(['name' => 'Employe', 'guard_name' => 'web']);
+        $user->assignRole($role);
 
         event(new Registered($user));
 
