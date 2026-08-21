@@ -38,4 +38,10 @@ class Task extends Model
     {
         return $this->belongsToMany(User::class, 'task_user');
     }
+
+    public function user()
+{
+    return $this->belongsTo(User::class);
+}
+
 }
