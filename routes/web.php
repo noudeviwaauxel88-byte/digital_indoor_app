@@ -109,6 +109,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity_logs.index');
 
+    // Route temporaire pour exécuter les migrations
+Route::get('/run-migrations', function () {
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        return "<h1>SUCCÈS !</h1><p>Les migrations ont été exécutées avec succès.</p><pre>" . Artisan::output() . "</pre>";
+    } catch (\Exception $e) {
+        return "Erreur lors de la migration : " . $e->getMessage();
+    }
+});
+
 });
 
 require __DIR__.'/auth.php';
