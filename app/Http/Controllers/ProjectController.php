@@ -12,39 +12,47 @@ class ProjectController extends Controller
      * Liste tous les projets.
      */
     public function index()
-    {
-        $projects = Project::withCount('tasks')
-            ->with('members')
-            ->latest()
-            ->get();
+{
+    $projects = Project::withCount('tasks')
+        ->with('members')
+        ->latest()
+        ->get();
 
-        return view('projects.index', compact('projects'));
+    $users = User::select('id', 'firstname', 'lastname', 'email')
+        ->orderBy('firstname')
+        ->get();
+
+    return view('projects.index', compact('projects', 'users'));
+}
+
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name'          => 'required|string|max:255',
+        'structure'     => 'nullable|string|max:255',
+        'start_date'    => 'nullable|date',
+        'description'   => 'nullable|string',
+        'visibility'    => 'required|in:private,public',
+        'invited_users' => 'nullable|array',
+        'invited_users.*' => 'exists:users,id',
+    ]);
+
+    $project = Project::create([
+        'name'        => $validated['name'],
+        'structure'   => $validated['structure'] ?? null,
+        'start_date'  => $validated['start_date'] ?? null,
+        'description' => $validated['description'] ?? null,
+        'visibility'  => $validated['visibility'],
+        'user_id'     => auth()->id(),
+    ]);
+
+    if (!empty($validated['invited_users'])) {
+        $project->members()->attach($validated['invited_users']);
     }
 
-    /**
-     * Enregistre un nouveau projet.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status'      => 'required|string|in:planning,in_progress,completed,on_hold',
-            'start_date'  => 'nullable|date',
-            'end_date'    => 'nullable|date|after_or_equal:start_date',
-            'color'       => 'nullable|string|max:7',
-        ]);
-
-        $project = Project::create($validated);
-
-        // Attribuer le créateur comme membre du projet si nécessaire
-        if (auth()->check()) {
-            $project->members()->attach(auth()->id());
-        }
-
-        return redirect()->route('projects.show', $project)
-            ->with('success', 'Projet créé avec succès.');
-    }
+    return redirect()->route('projects.index')
+        ->with('success', 'Projet créé avec succès.');
+}
 
     /**
      * Affiche les détails d'un projet spécifique.

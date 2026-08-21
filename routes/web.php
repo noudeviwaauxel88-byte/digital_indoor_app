@@ -86,6 +86,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/equipments/{equipment}/stockout', [EquipmentController::class, 'storeStockOut'])->name('equipments.stockout.store');
     Route::get('/equipments/stockout/history', [EquipmentController::class, 'stockOutHistory'])->name('equipments.stockout.history');
     Route::delete('/equipments/stockout/{stockMovement}', [EquipmentController::class, 'destroyStockOut'])->name('equipments.stockout.destroy');
+    Route::post('/equipments/stockout/{equipmentOut}/return', [EquipmentController::class, 'returnStockOut'])->name('equipments.stockout.return');
     
     // Calendrier (Events)
     Route::get('/calendrier', [EventController::class, 'index'])->name('calendar.index');

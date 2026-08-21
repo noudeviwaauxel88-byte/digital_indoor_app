@@ -11,9 +11,6 @@ use Illuminate\Support\Facades\Auth;
 
 class EquipmentController extends Controller
 {
-    /**
-     * Contrôle d'accès pour les actions de gestion.
-     */
     private function authorizeManagement(): void
     {
         if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Manager'])) {
@@ -73,8 +70,8 @@ class EquipmentController extends Controller
         $equipment = Equipment::create([
             'title'       => $validated['title'],
             'brand'       => $validated['brand'],
-            'type'        => $validated['type'],
-            'description' => $validated['description'],
+            'type'        => $validated['type'] ?? 'Matériel',
+            'description' => $validated['description'] ?? null,
         ]);
 
         for ($i = 0; $i < $validated['quantity']; $i++) {
@@ -132,7 +129,6 @@ class EquipmentController extends Controller
         $this->authorizeManagement();
 
         $equipments = Equipment::whereHas('availableItems')->get();
-        // Optimisation de la sélection utilisateur
         $users = User::select('id', 'firstname', 'lastname', 'email')
             ->orderBy('firstname')
             ->orderBy('lastname')
@@ -178,4 +174,34 @@ class EquipmentController extends Controller
         return redirect()->route('equipments.index')
             ->with('success', 'Sortie de stock enregistrée avec succès.');
     }
+
+    public function stockOutHistory()
+    {
+        $this->authorizeManagement();
+
+        $outs = EquipmentOut::with(['item.equipment', 'user'])
+            ->latest('out_date')
+            ->paginate(15);
+
+        return view('equipments.stockout_history', compact('outs'));
+    }
+
+    public function returnStockOut(EquipmentOut $equipmentOut)
+{
+    $this->authorizeManagement();
+
+    // Mettre à jour le statut de l'exemplaire de matériel à "available"
+    if ($equipmentOut->item) {
+        $equipmentOut->item->update([
+            'status' => 'available'
+        ]);
+    }
+
+    // Optionnel : Enregistrer la date effective de retour
+    $equipmentOut->update([
+        'return_date' => now()
+    ]);
+
+    return back()->with('success', 'Le matériel a été marqué comme retourné et est de nouveau disponible.');
+}
 }

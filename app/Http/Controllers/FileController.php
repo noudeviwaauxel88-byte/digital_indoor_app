@@ -39,7 +39,6 @@ class FileController extends Controller
     {
         $user = Auth::user();
 
-        // Sécurité : Vérification du droit d'accès au dossier
         if ($folder->is_private && $folder->user_id !== $user->id && !$user->hasRole('SuperAdmin')) {
             abort(403, 'Vous n\'avez pas accès à ce dossier privé.');
         }
@@ -56,12 +55,34 @@ class FileController extends Controller
         return view('files.show', compact('folder', 'folders', 'files', 'itemsCount'));
     }
 
+    public function storeFile(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240',
+            'folder_id' => 'nullable|exists:folders,id',
+            'is_private' => 'nullable|boolean',
+        ]);
+
+        $uploadedFile = $request->file('file');
+        $path = $uploadedFile->store('uploads', 'public');
+
+        File::create([
+            'name' => $uploadedFile->getClientOriginalName(),
+            'path' => $path,
+            'mime_type' => $uploadedFile->getClientMimeType(),
+            'size' => $uploadedFile->getSize(),
+            'folder_id' => $request->input('folder_id'),
+            'user_id' => Auth::id(),
+            'is_private' => $request->boolean('is_private', false),
+        ]);
+
+        return back()->with('success', 'Fichier téléchargé avec succès.');
+    }
+
     private function applyFiltersAndSort(Request $request, $queryFolders, $queryFiles)
     {
-        // Sécurisation de la direction de tri
         $direction = strtolower($request->input('direction')) === 'asc' ? 'asc' : 'desc';
 
-        // Filtrage par type
         if ($request->filled('type') && $request->input('type') !== 'Tous') {
             $type = $request->input('type');
             if ($type === 'Dossiers') {
@@ -86,14 +107,12 @@ class FileController extends Controller
             }
         }
 
-        // Filtrage par recherche
         if ($request->filled('search')) {
             $search = $request->input('search');
             $queryFolders->where('name', 'like', "%{$search}%");
             $queryFiles->where('name', 'like', "%{$search}%");
         }
 
-        // Tri sécurisé
         $allowedSorts = ['Nom', 'Taille du fichier', 'Dernière ouverture', 'Date de téléchargement'];
         $sort = in_array($request->input('sort'), $allowedSorts) ? $request->input('sort') : 'Date de téléchargement';
 
@@ -103,7 +122,6 @@ class FileController extends Controller
                 $queryFiles->orderBy('name', $direction)
             ],
             'Taille du fichier' => [
-                // Un dossier n'a pas de colonne size, on trie donc les dossiers par nom
                 $queryFolders->orderBy('name', 'asc'),
                 $queryFiles->orderBy('size', $direction)
             ],

@@ -1,119 +1,169 @@
 <x-app-layout>
-    <div x-data="{ isStockMovementModalOpen: false, selectedMovement: null }">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-semibold text-gray-800">Historique des Sorties de Stock</h1>
-            <a href="{{ route('equipments.index') }}" class="px-4 py-2 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 shadow-sm hover:bg-gray-50 text-sm">&larr; Retour au Stock</a>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            @forelse ($movements as $movement)
-                {{-- Carte cliquable --}}
-                <button @click="selectedMovement = {{ Js::from($movement) }}; isStockMovementModalOpen = true" class="w-full text-left bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-shadow duration-300">
-                    
-                    {{-- Image de l'équipement --}}
-                    @if($item = $movement->equipmentItems->first())
-                        <div class="bg-white p-4 h-48 flex items-center justify-center">
-                            <img class="max-h-full max-w-full object-contain" src="{{ $item->equipment->image_path ? asset('storage/'. $item->equipment->image_path) : 'https://placehold.co/400x400/e2e8f0/e2e8f0?text=.' }}" alt="{{ $item->equipment->title }}">
-                        </div>
-                    @else
-                        <div class="bg-gray-100 p-4 h-48 flex items-center justify-center text-gray-400 text-sm italic">Image indisponible</div>
-                    @endif
-
-                    <div class="p-4 border-t border-gray-100">
-                        <h3 class="font-semibold text-gray-800 truncate">{{ $movement->equipmentItems->first()->equipment->title ?? 'Équipement Supprimé' }}</h3>
-                        
-                        {{-- Sous-titre (Nombre d'articles ou Type) --}}
-                        @if($movement->equipmentItems->count() > 1)
-                            <p class="text-sm text-gray-500 mt-1">(+ {{ $movement->equipmentItems->count() - 1 }} autre{{ $movement->equipmentItems->count() > 2 ? 's' : '' }} article{{ $movement->equipmentItems->count() > 2 ? 's' : '' }})</p>
-                        @else
-                            <p class="text-sm text-gray-500 mt-1">{{ $movement->equipmentItems->first()->equipment->type ?? 'N/A' }}</p>
-                        @endif
-                        
-                        {{-- Badge Projet ou Destination --}}
-                        @if($movement->project)
-                            <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 mt-2">{{ $movement->project->name }}</span>
-                        @elseif($movement->other_destination)
-                            <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mt-2">{{ Str::limit($movement->other_destination, 15) }}</span>
-                        @endif
-
-                        <div class="mt-4 flex justify-between items-center">
-                            <p class="text-lg font-bold text-red-600">- {{ $movement->equipmentItems->count() }}</p>
-                            <p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($movement->movement_date)->format('d/m/Y') }}</p>
-                        </div>
-
-                        {{-- Affichage du Nom sur la carte --}}
-                        @if($movement->user)
-                            <p class="text-xs text-gray-500 mt-2 font-medium">Par : {{ $movement->user->name }}</p>
-                        @endif
-                    </div>
-                </button>
-            @empty
-                <div class="col-span-full text-center py-12"><p class="text-gray-500">Aucune sortie de stock enregistrée pour le moment.</p></div>
-            @endforelse
-        </div>
-
-        {{-- MODAL DES DÉTAILS --}}
-        <div x-show="isStockMovementModalOpen" @keydown.escape.window="isStockMovementModalOpen = false" x-cloak class="relative z-20">
-            <div x-show="isStockMovementModalOpen" x-transition class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-                <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                    <div x-show="isStockMovementModalOpen" @click.away="isStockMovementModalOpen = false" class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-                        <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                                <div class="flex justify-between items-center"><h3 class="text-base font-semibold leading-6 text-gray-900">Détails de la Sortie</h3><button @click="isStockMovementModalOpen = false" type="button" class="text-gray-400 hover:text-gray-600">&times;</button></div>
-                                <div class="mt-4">
-                                    <dl class="divide-y divide-gray-100">
-                                        {{-- Date --}}
-                                        <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"><dt class="text-sm font-medium leading-6 text-gray-900">Date</dt><dd x-text="selectedMovement ? new Date(selectedMovement.movement_date).toLocaleDateString('fr-FR') : ''" class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0"></dd></div>
-                                        
-                                        {{-- Demandeur (C'est ici que ça s'affiche) --}}
-                                        <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                                            <dt class="text-sm font-medium leading-6 text-gray-900">Demandeur</dt>
-                                            <dd x-text="selectedMovement && selectedMovement.user ? selectedMovement.user.name : 'Utilisateur inconnu'" class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0"></dd>
-                                        </div>
-                                        
-                                        {{-- Projet --}}
-                                        <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0" x-show="selectedMovement && selectedMovement.project">
-                                            <dt class="text-sm font-medium leading-6 text-gray-900">Projet</dt>
-                                            <dd x-text="selectedMovement && selectedMovement.project ? selectedMovement.project.name : ''" class="mt-1 text-sm font-bold text-blue-600 sm:col-span-2 sm:mt-0"></dd>
-                                        </div>
-
-                                        {{-- Destination autre --}}
-                                        <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0" x-show="selectedMovement && selectedMovement.other_destination">
-                                            <dt class="text-sm font-medium leading-6 text-gray-900">Destination</dt>
-                                            <dd x-text="selectedMovement ? selectedMovement.other_destination : ''" class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0"></dd>
-                                        </div>
-
-                                        {{-- Motif --}}
-                                        <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"><dt class="text-sm font-medium leading-6 text-gray-900">Motif</dt><dd x-text="selectedMovement && selectedMovement.reason ? selectedMovement.reason : 'Aucun'" class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0"></dd></div>
-                                        
-                                        {{-- Fichier --}}
-                                        <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0" x-show="selectedMovement && selectedMovement.file_path"><dt class="text-sm font-medium leading-6 text-gray-900">Fichier</dt><dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0"><a :href="selectedMovement ? '/storage/' + selectedMovement.file_path : '#'" target="_blank" class="text-blue-600 hover:underline">Télécharger</a></dd></div>
-                                        
-                                        {{-- Liste des articles --}}
-                                        <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"><dt class="text-sm font-medium leading-6 text-gray-900">Articles</dt><dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0"><ul class="list-disc list-inside space-y-1"><template x-for="item in selectedMovement.equipment_items" :key="item.id"><li><span x-text="item.equipment.title" class="font-medium"></span> (<span x-text="item.serial_number"></span>)</li></template></ul></dd></div>
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {{-- PIED DE PAGE DU MODAL (AVEC BOUTON SUPPRIMER) --}}
-                        <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:justify-between sm:px-6">
-                             <button @click="isStockMovementModalOpen = false" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:ml-3">Fermer</button>
-                            
-                             <form x-bind:action="'{{ url('equipments/stockout') }}/' + (selectedMovement ? selectedMovement.id : '')" method="POST" x-ref="deleteForm" x-show="selectedMovement">
-                                @csrf
-                                @method('DELETE')
-                                <button type="button" 
-                                        @click="if (confirm('ATTENTION : Êtes-vous sûr ?\n\nCela va annuler la sortie et REMETTRE les articles en stock.')) $refs.deleteForm.submit()"
-                                        class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:w-auto">
-                                    Supprimer la Sortie
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+    <div class="px-6 sm:px-10 py-8">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-800">Historique des sorties de stock</h1>
+                <p class="text-sm text-gray-500 mt-1">Consultez l'ensemble des mouvements de matériel attribués aux utilisateurs.</p>
             </div>
+            
+            <div class="flex items-center gap-3">
+                <a href="{{ route('equipments.index') }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg shadow-sm hover:bg-gray-50 flex items-center gap-2 transition-colors">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Retour aux équipements
+                </a>
+                
+                @hasanyrole('SuperAdmin|Manager')
+                <a href="{{ route('equipments.stockout.create') }}" class="px-4 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 flex items-center gap-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Nouvelle sortie
+                </a>
+                @endhasanyrole
+            </div>
+        </div>
+
+        <!-- Notification de succès -->
+        @if(session('success'))
+            <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg flex items-center justify-between">
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
+
+        <!-- Tableau des sorties -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-500">{{ $outs->total() }} mouvement(s) enregistré(s)</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <th class="py-3 px-4">Équipement</th>
+                            <th class="py-3 px-4">Bénéficiaire</th>
+                            <th class="py-3 px-4">Date de sortie</th>
+                            <th class="py-3 px-4">Date de retour prévue</th>
+                            <th class="py-3 px-4">Statut</th>
+                            <th class="py-3 px-4">Notes</th>
+                            <th class="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+                        @forelse ($outs as $out)
+                            <tr class="hover:bg-gray-50/80 transition-colors">
+                                <!-- Équipement & Code Exemplaire -->
+                                <td class="py-3.5 px-4">
+                                    <div class="font-medium text-gray-900">
+                                        {{ $out->item->equipment->title ?? 'Équipement supprimé' }}
+                                    </div>
+                                    <div class="text-xs text-gray-400">
+                                        Marque: {{ $out->item->equipment->brand ?? 'N/A' }} 
+                                        @if(isset($out->item->code))
+                                            • <span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">#{{ $out->item->code }}</span>
+                                        @endif
+                                    </div>
+                                </td>
+
+                                <!-- Utilisateur -->
+                                <td class="py-3.5 px-4">
+                                    @if($out->user)
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">
+                                                {{ strtoupper(substr($out->user->firstname ?? $out->user->name, 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-gray-800">{{ $out->user->firstname }} {{ $out->user->lastname }}</p>
+                                                <p class="text-xs text-gray-400">{{ $out->user->email }}</p>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400 italic">Non spécifié</span>
+                                    @endif
+                                </td>
+
+                                <!-- Date de sortie -->
+                                <td class="py-3.5 px-4 text-gray-600 whitespace-nowrap">
+                                    {{ \Carbon\Carbon::parse($out->out_date)->format('d/m/Y') }}
+                                </td>
+
+                                <!-- Date de retour prévue -->
+                                <td class="py-3.5 px-4 text-gray-600 whitespace-nowrap">
+                                    @if($out->return_date)
+                                        {{ \Carbon\Carbon::parse($out->return_date)->format('d/m/Y') }}
+                                    @else
+                                        <span class="text-gray-400">—</span>
+                                    @endif
+                                </td>
+
+                                <!-- Statut -->
+                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                    @if($out->item && $out->item->status === 'returned')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Retourné
+                                        </span>
+                                    @elseif($out->return_date && \Carbon\Carbon::parse($out->return_date)->isPast())
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            En retard
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            En cours
+                                        </span>
+                                    @endif
+                                </td>
+
+                                <!-- Notes -->
+                                <td class="py-3.5 px-4 text-gray-500 max-w-xs truncate" title="{{ $out->notes }}">
+                                    {{ $out->notes ?? '—' }}
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                                    @hasanyrole('SuperAdmin|Manager')
+                                        @if($out->item && $out->item->status !== 'returned')
+                                            <form method="POST" action="{{ route('equipments.stockout.return', $out) }}" onsubmit="return confirm('Confirmez-vous le retour de cet équipement ?');" class="inline-block">
+                                                @csrf
+                                                <button type="submit" class="px-3 py-1 bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 text-xs font-semibold rounded-md transition-colors flex items-center gap-1 ml-auto">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                    Marquer retourné
+                                                </button>
+                                            </form>
+                                        @else
+                                            <span class="text-xs text-gray-400 italic">Aucune action</span>
+                                        @endif
+                                    @endhasanyrole
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-12">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3 text-gray-400">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-gray-500 font-medium">Aucun mouvement de sortie enregistré.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if($outs->hasPages())
+                <div class="p-4 border-t border-gray-100">
+                    {{ $outs->links() }}
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>
