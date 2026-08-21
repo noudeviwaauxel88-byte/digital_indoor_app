@@ -56,34 +56,36 @@ class EquipmentController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $this->authorizeManagement();
+{
+    $this->authorizeManagement();
 
-        $validated = $request->validate([
-            'title'       => 'required|string|max:255',
-            'brand'       => 'nullable|string|max:255',
-            'type'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'quantity'    => 'required|integer|min:1',
+    $validated = $request->validate([
+        'title'       => 'required|string|max:255',
+        'brand'       => 'nullable|string|max:255',
+        'type'        => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'price'       => 'nullable|numeric|min:0', // Validation du prix
+        'quantity'    => 'required|integer|min:1',
+    ]);
+
+    $equipment = Equipment::create([
+        'title'       => $validated['title'],
+        'brand'       => $validated['brand'],
+        'type'        => $validated['type'] ?? 'Matériel',
+        'description' => $validated['description'] ?? null,
+        'price'       => $validated['price'] ?? 0, // Valeur par défaut à 0 si non renseigné
+    ]);
+
+    for ($i = 0; $i < $validated['quantity']; $i++) {
+        EquipmentItem::create([
+            'equipment_id' => $equipment->id,
+            'status'       => 'available',
         ]);
-
-        $equipment = Equipment::create([
-            'title'       => $validated['title'],
-            'brand'       => $validated['brand'],
-            'type'        => $validated['type'] ?? 'Matériel',
-            'description' => $validated['description'] ?? null,
-        ]);
-
-        for ($i = 0; $i < $validated['quantity']; $i++) {
-            EquipmentItem::create([
-                'equipment_id' => $equipment->id,
-                'status'       => 'available',
-            ]);
-        }
-
-        return redirect()->route('equipments.index')
-            ->with('success', 'Équipement et exemplaires créés avec succès.');
     }
+
+    return redirect()->route('equipments.index')
+        ->with('success', 'Équipement et exemplaires créés avec succès.');
+}
 
     public function show(Equipment $equipment)
     {

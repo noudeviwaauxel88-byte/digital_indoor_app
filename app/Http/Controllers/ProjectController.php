@@ -58,17 +58,17 @@ public function store(Request $request)
      * Affiche les détails d'un projet spécifique.
      */
     public function show(Project $project)
-    {
-        $project->load(['tasks.assignedUser', 'members']);
+{
+    // Charger les relations nécessaires du projet
+    $project->load(['members', 'tasks.user']);
 
-        // Sélection uniquement des colonnes requises pour optimiser la mémoire
-        $allUsers = User::select('id', 'firstname', 'lastname', 'email')
-            ->orderBy('firstname')
-            ->orderBy('lastname')
-            ->get();
+    // Récupérer la liste de tous les utilisateurs pour l'attribution dans Alpine.js
+    $users = \App\Models\User::select('id', 'firstname', 'lastname', 'email')
+        ->orderBy('firstname')
+        ->get();
 
-        return view('projects.show', compact('project', 'allUsers'));
-    }
+    return view('projects.show', compact('project', 'users'));
+}
 
     /**
      * Formulaire d'édition de projet.
