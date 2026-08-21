@@ -55,7 +55,7 @@ class EquipmentController extends Controller
         return view('equipments.create');
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
 {
     $this->authorizeManagement();
 
@@ -64,7 +64,7 @@ class EquipmentController extends Controller
         'brand'       => 'nullable|string|max:255',
         'type'        => 'required|string|max:255',
         'description' => 'nullable|string',
-        'price'       => 'nullable|numeric|min:0', // Validation du prix
+        'price'       => 'nullable|numeric|min:0',
         'quantity'    => 'required|integer|min:1',
     ]);
 
@@ -73,13 +73,15 @@ class EquipmentController extends Controller
         'brand'       => $validated['brand'],
         'type'        => $validated['type'] ?? 'Matériel',
         'description' => $validated['description'] ?? null,
-        'price'       => $validated['price'] ?? 0, // Valeur par défaut à 0 si non renseigné
+        'price'       => $validated['price'] ?? 0,
     ]);
 
+    // Génération automatique du numéro de série pour respecter la contrainte NOT NULL
     for ($i = 0; $i < $validated['quantity']; $i++) {
         EquipmentItem::create([
-            'equipment_id' => $equipment->id,
-            'status'       => 'available',
+            'equipment_id'  => $equipment->id,
+            'status'        => 'available',
+            'serial_number' => 'EQ-' . $equipment->id . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
         ]);
     }
 
