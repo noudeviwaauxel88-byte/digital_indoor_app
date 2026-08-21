@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Equipment;
 use App\Models\EquipmentItem;
-use App\Models\EquipmentOut;
+use App\Models\StockMovement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,43 +55,42 @@ class EquipmentController extends Controller
         return view('equipments.create');
     }
 
-   public function store(Request $request)
-{
-    $this->authorizeManagement();
+    public function store(Request $request)
+    {
+        $this->authorizeManagement();
 
-    $validated = $request->validate([
-        'title'       => 'required|string|max:255',
-        'brand'       => 'nullable|string|max:255',
-        'type'        => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'price'       => 'nullable|numeric|min:0',
-        'quantity'    => 'required|integer|min:1',
-    ]);
-
-    $equipment = Equipment::create([
-        'title'       => $validated['title'],
-        'brand'       => $validated['brand'],
-        'type'        => $validated['type'] ?? 'Matériel',
-        'description' => $validated['description'] ?? null,
-        'price'       => $validated['price'] ?? 0,
-    ]);
-
-    // Génération automatique du numéro de série pour respecter la contrainte NOT NULL
-    for ($i = 0; $i < $validated['quantity']; $i++) {
-        EquipmentItem::create([
-            'equipment_id'  => $equipment->id,
-            'status'        => 'available',
-            'serial_number' => 'EQ-' . $equipment->id . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
+        $validated = $request->validate([
+            'title'       => 'required|string|max:255',
+            'brand'       => 'nullable|string|max:255',
+            'type'        => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price'       => 'nullable|numeric|min:0',
+            'quantity'    => 'required|integer|min:1',
         ]);
-    }
 
-    return redirect()->route('equipments.index')
-        ->with('success', 'Équipement et exemplaires créés avec succès.');
-}
+        $equipment = Equipment::create([
+            'title'       => $validated['title'],
+            'brand'       => $validated['brand'],
+            'type'        => $validated['type'] ?? 'Matériel',
+            'description' => $validated['description'] ?? null,
+            'price'       => $validated['price'] ?? 0,
+        ]);
+
+        for ($i = 0; $i < $validated['quantity']; $i++) {
+            EquipmentItem::create([
+                'equipment_id'  => $equipment->id,
+                'status'        => 'en_stock',
+                'serial_number' => 'EQ-' . $equipment->id . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
+            ]);
+        }
+
+        return redirect()->route('equipments.index')
+            ->with('success', 'Équipement et exemplaires créés avec succès.');
+    }
 
     public function show(Equipment $equipment)
     {
-        $equipment->load(['items.outs.user', 'items.outs.project']);
+        $equipment->load(['items']);
         return view('equipments.show', compact('equipment'));
     }
 
@@ -150,12 +149,11 @@ class EquipmentController extends Controller
             'quantity'     => 'required|integer|min:1',
             'user_id'      => 'required|exists:users,id',
             'out_date'     => 'required|date',
-            'return_date'  => 'nullable|date|after_or_equal:out_date',
             'notes'        => 'nullable|string',
         ]);
 
         $availableItems = EquipmentItem::where('equipment_id', $validated['equipment_id'])
-            ->where('status', 'available')
+            ->where('status', 'en_stock')
             ->take($validated['quantity'])
             ->get();
 
@@ -163,16 +161,15 @@ class EquipmentController extends Controller
             return back()->withErrors(['quantity' => 'Quantité disponible insuffisante.'])->withInput();
         }
 
-        foreach ($availableItems as $item) {
-            $item->update(['status' => 'borrowed']);
+        $movement = StockMovement::create([
+            'user_id'       => $validated['user_id'],
+            'reason'        => $validated['notes'] ?? 'Sortie de matériel',
+            'movement_date' => $validated['out_date'],
+        ]);
 
-            EquipmentOut::create([
-                'equipment_item_id' => $item->id,
-                'user_id'           => $validated['user_id'],
-                'out_date'          => $validated['out_date'],
-                'return_date'       => $validated['return_date'] ?? null,
-                'notes'             => $validated['notes'] ?? null,
-            ]);
+        foreach ($availableItems as $item) {
+            $item->update(['status' => 'sorti']);
+            $movement->equipmentItems()->attach($item->id);
         }
 
         return redirect()->route('equipments.index')
@@ -183,29 +180,10 @@ class EquipmentController extends Controller
     {
         $this->authorizeManagement();
 
-        $outs = EquipmentOut::with(['item.equipment', 'user'])
-            ->latest('out_date')
+        $outs = StockMovement::with(['user', 'equipmentItems.equipment'])
+            ->latest('movement_date')
             ->paginate(15);
 
         return view('equipments.stockout_history', compact('outs'));
     }
-
-    public function returnStockOut(EquipmentOut $equipmentOut)
-{
-    $this->authorizeManagement();
-
-    // Mettre à jour le statut de l'exemplaire de matériel à "available"
-    if ($equipmentOut->item) {
-        $equipmentOut->item->update([
-            'status' => 'available'
-        ]);
-    }
-
-    // Optionnel : Enregistrer la date effective de retour
-    $equipmentOut->update([
-        'return_date' => now()
-    ]);
-
-    return back()->with('success', 'Le matériel a été marqué comme retourné et est de nouveau disponible.');
-}
 }
