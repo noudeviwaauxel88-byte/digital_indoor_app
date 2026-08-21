@@ -6,6 +6,7 @@ use App\Models\Equipment;
 use App\Models\EquipmentItem;
 use App\Models\StockMovement;
 use App\Models\User;
+use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -127,52 +128,53 @@ class EquipmentController extends Controller
             ->with('success', 'Équipement supprimé avec succès.');
     }
 
-    public function createStockOut()
+    public function createStockOut(Equipment $equipment)
     {
         $this->authorizeManagement();
 
-        $equipments = Equipment::whereHas('availableItems')->get();
-        $users = User::select('id', 'firstname', 'lastname', 'email')
-            ->orderBy('firstname')
-            ->orderBy('lastname')
-            ->get();
+        $equipment->load('availableItems');
+        $users = User::select('id', 'name')->orderBy('name')->get();
+        $projects = Project::select('id', 'name')->get();
 
-        return view('equipments.stock_out', compact('equipments', 'users'));
+        return view('equipments.stockout', compact('equipment', 'users', 'projects'));
     }
 
-    public function storeStockOut(Request $request)
+    public function storeStockOut(Request $request, Equipment $equipment)
     {
         $this->authorizeManagement();
 
         $validated = $request->validate([
-            'equipment_id' => 'required|exists:equipments,id',
-            'quantity'     => 'required|integer|min:1',
-            'user_id'      => 'required|exists:users,id',
-            'out_date'     => 'required|date',
-            'notes'        => 'nullable|string',
+            'movement_date'     => 'required|date',
+            'user_id'           => 'required|exists:users,id',
+            'project_id'        => 'nullable|exists:projects,id',
+            'other_destination' => 'nullable|string|max:255',
+            'item_ids'          => 'required|array|min:1',
+            'item_ids.*'        => 'exists:equipment_items,id',
+            'reason'            => 'nullable|string',
+            'document'          => 'nullable|file|mimes:pdf,doc,docx|max:5120',
         ]);
 
-        $availableItems = EquipmentItem::where('equipment_id', $validated['equipment_id'])
-            ->where('status', 'en_stock')
-            ->take($validated['quantity'])
-            ->get();
-
-        if ($availableItems->count() < $validated['quantity']) {
-            return back()->withErrors(['quantity' => 'Quantité disponible insuffisante.'])->withInput();
+        $filePath = null;
+        if ($request->hasFile('document')) {
+            $filePath = $request->file('document')->store('stock_documents', 'public');
         }
 
         $movement = StockMovement::create([
-            'user_id'       => $validated['user_id'],
-            'reason'        => $validated['notes'] ?? 'Sortie de matériel',
-            'movement_date' => $validated['out_date'],
+            'user_id'           => $validated['user_id'],
+            'reason'            => $validated['reason'] ?? 'Sortie de matériel',
+            'movement_date'     => $validated['movement_date'],
+            'project_id'        => $validated['project_id'] ?? null,
+            'other_destination' => $validated['other_destination'] ?? null,
+            'file_path'         => $filePath,
         ]);
 
-        foreach ($availableItems as $item) {
-            $item->update(['status' => 'sorti']);
-            $movement->equipmentItems()->attach($item->id);
+        EquipmentItem::whereIn('id', $validated['item_ids'])->update(['status' => 'sorti']);
+
+        foreach ($validated['item_ids'] as $itemId) {
+            $movement->equipmentItems()->attach($itemId);
         }
 
-        return redirect()->route('equipments.index')
+        return redirect()->route('equipments.stockout.history')
             ->with('success', 'Sortie de stock enregistrée avec succès.');
     }
 
