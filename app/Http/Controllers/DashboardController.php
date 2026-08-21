@@ -4,10 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Task;
-use App\Models\Event;
-use App\Models\Project;
-use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -15,53 +11,29 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // 1. Statistiques des Tâches (Via la relation Many-to-Many 'tasks')
-        // On compte les tâches assignées à l'utilisateur connecté en groupant les statuts
-        
+        // Requête groupée pour optimiser les performances du tableau de bord
+        $rawStats = $user->tasks()
+            ->selectRaw("
+                COUNT(CASE WHEN status = 'todo' THEN 1 END) as todo,
+                COUNT(CASE WHEN status IN ('in_progress', 'to_validate') THEN 1 END) as in_progress,
+                COUNT(CASE WHEN status IN ('done', 'cancelled') THEN 1 END) as done,
+                COUNT(CASE WHEN due_date < NOW() AND status NOT IN ('done', 'cancelled') THEN 1 END) as overdue
+            ")
+            ->first();
+
         $stats = [
-            // À FAIRE : Uniquement 'Non commencé'
-            'todo' => $user->tasks()->where('status', 'todo')->count(),
-            
-            // EN COURS : 'En cours' + 'À valider'
-            'in_progress' => $user->tasks()->whereIn('status', ['in_progress', 'to_validate'])->count(),
-            
-            // TERMINÉES : 'Achevée' + 'Annulée'
-            'done' => $user->tasks()->whereIn('status', ['done', 'cancelled'])->count(),
-            
-            // EN RETARD : Date dépassée et pas terminé/annulé
-            'overdue' => $user->tasks()
-                            ->where('due_date', '<', now())
-                            ->whereNotIn('status', ['done', 'cancelled'])
-                            ->count(),
+            'todo'        => $rawStats->todo ?? 0,
+            'in_progress' => $rawStats->in_progress ?? 0,
+            'done'        => $rawStats->done ?? 0,
+            'overdue'     => $rawStats->overdue ?? 0,
         ];
 
-        // 2. Événements à venir (Les 3 prochains)
-        $upcomingEvents = Event::where('start_date', '>=', Carbon::today())
-                                ->orderBy('start_date', 'asc')
-                                ->take(3)
-                                ->get();
-
-        // 3. Projets Récents (Créateur ou Membre)
-        $recentProjects = Project::where('user_id', $user->id)
-            ->orWhereHas('members', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->withCount('tasks')
-            ->latest('updated_at')
+        $recentTasks = $user->tasks()
+            ->with('project')
+            ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
 
-        // 4. Mes Tâches Assignées (Liste à afficher)
-        // On affiche tout sauf ce qui est terminé ou annulé (donc on inclut 'to_validate')
-        $myTasks = $user->tasks()
-                        ->whereNotIn('status', ['done', 'cancelled'])
-                        ->with('project')
-                        ->orderBy('due_date', 'asc') // Les plus urgentes en premier
-                        ->get()
-                        ->groupBy(function($task) {
-                            return $task->project ? $task->project->name : 'Sans Projet';
-                        });
-
-        return view('dashboard', compact('stats', 'upcomingEvents', 'recentProjects', 'myTasks'));
+        return view('dashboard', compact('stats', 'recentTasks'));
     }
 }
