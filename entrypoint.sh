@@ -1,16 +1,19 @@
 #!/bin/sh
 
-# Mettre en cache la configuration, les routes et les vues au démarrage
+# Mise en cache de la configuration, des routes, des vues et événements
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 php artisan event:cache
 
-# Exécuter les migrations en production de manière automatique
+# Exécution automatique des migrations sur la base de données
 php artisan migrate --force
 
-# Démarrer le serveur PHP-FPM en arrière-plan
+# Lancer le Queue Worker en arrière-plan (gratuit, dans le même conteneur)
+php artisan queue:work --tries=3 --timeout=90 &
+
+# Démarrage du service PHP-FPM en arrière-plan
 php-fpm -D
 
-# Démarrer le serveur Nginx au premier plan
+# Démarrage du serveur web Nginx au premier plan
 nginx -g "daemon off;"
