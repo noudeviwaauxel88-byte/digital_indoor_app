@@ -10,23 +10,51 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
 
-        <!-- Scripts and Styles via Vite -->
+        <!-- Scripts et Styles via Vite -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen flex bg-gray-100">
-            <!-- Sidebar -->
-            <aside class="w-64 flex-shrink-0 bg-white border-r flex flex-col fixed h-full z-30">
+    <body class="font-sans antialiased bg-gray-100" x-data="{ sidebarOpen: false }">
+        <div class="min-h-screen flex flex-col md:flex-row">
+
+            <!-- En-tête mobile (Visible uniquement sur mobile/tablette) -->
+            <div class="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+                <div class="flex items-center space-x-3">
+                    <button @click="sidebarOpen = !sidebarOpen" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <span class="font-bold text-gray-800 text-lg">Digital Indoor</span>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
+                    {{ strtoupper(substr(Auth::user()->firstname ?? Auth::user()->name, 0, 1)) }}
+                </div>
+            </div>
+
+            <!-- Overlay sombre en arrière-plan sur mobile quand le menu est ouvert -->
+            <div x-show="sidebarOpen" 
+                 x-transition:enter="transition-opacity ease-linear duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition-opacity ease-linear duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="sidebarOpen = false" 
+                 class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" 
+                 style="display: none;"></div>
+
+            <!-- Sidebar (Mobile & Desktop) -->
+            <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" 
+                   class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r flex flex-col transform md:transform-none md:static md:translate-x-0 transition-transform duration-200 ease-in-out">
+                
+                <!-- Profil Utilisateur dans le menu -->
                 <a href="{{ route('profile.edit') }}" class="block p-4 border-b hover:bg-gray-50">
                     <div class="flex items-center">
                         <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg">
-                            {{-- Affiche la première lettre du prénom --}}
                             {{ strtoupper(substr(Auth::user()->firstname ?? Auth::user()->name, 0, 1)) }}
                         </div>
                         <div class="ml-3 overflow-hidden">
                             <p class="font-semibold text-gray-800 truncate">{{ Auth::user()->firstname ?? Auth::user()->name }}</p>
-                            
-                            {{-- AJOUT : Affichage du Rôle sous le nom --}}
                             <p class="text-[10px] uppercase font-bold text-purple-600 truncate">
                                 {{ Auth::user()->getRoleNames()->first() ?? 'Digital Indoor Inc.' }}
                             </p>
@@ -34,7 +62,7 @@
                     </div>
                 </a>
 
-                <!-- Main Navigation -->
+                <!-- Navigation Principale -->
                 <nav class="flex-grow p-4 space-y-2 overflow-y-auto">
                     <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-2 text-gray-700 rounded-lg {{ request()->routeIs('dashboard') ? 'bg-primary text-white' : 'hover:bg-gray-200' }}">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
@@ -61,9 +89,6 @@
                         <span>Fichiers</span>
                     </a>
 
-                    {{-- ================================================== --}}
-                    {{-- == MENU ADMIN : Visible seulement pour SuperAdmin == --}}
-                    {{-- ================================================== --}}
                     @role('SuperAdmin')
                     <div class="pt-4 mt-4 border-t border-gray-100">
                         <p class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Administration</p>
@@ -72,15 +97,14 @@
                             <span>Utilisateurs</span>
                         </a>
                         <a href="{{ route('activity_logs.index') }}" class="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-purple-50 hover:text-purple-700">
-    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    <span>Historique (Logs)</span>
-</a>
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Historique (Logs)</span>
+                        </a>
                     </div>
                     @endrole
-
                 </nav>
                 
-                 <div class="p-4 border-t">
+                <div class="p-4 border-t">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <a href="{{ route('logout') }}" onclick="event.preventDefault(); this.closest('form').submit();" class="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
@@ -91,9 +115,9 @@
                 </div>
             </aside>
             
-            <!-- Main Content -->
-            <div class="flex-1 flex flex-col ml-64">
-                <main class="flex-grow p-6 sm:p-10">
+            <!-- Contenu Principal -->
+            <div class="flex-1 flex flex-col min-w-0">
+                <main class="flex-grow p-4 sm:p-6 lg:p-10">
                     {{ $slot }}
                 </main>
             </div>
