@@ -13,6 +13,7 @@ class DashboardController extends Controller
 
         // Requête groupée pour optimiser les performances du tableau de bord
         $rawStats = $user->tasks()
+            ->toBase() // Utilise le Query Builder de base pour éviter les colonnes pivot automatiques
             ->selectRaw("
                 COUNT(CASE WHEN status = 'todo' THEN 1 END) as todo,
                 COUNT(CASE WHEN status IN ('in_progress', 'to_validate') THEN 1 END) as in_progress,
