@@ -15,14 +15,14 @@
                     Retour aux équipements
                 </a>
                 
-                @hasanyrole('SuperAdmin|Manager')
-                <a href="{{ route('equipments.stockout.create') }}" class="px-4 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 flex items-center gap-2 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Nouvelle sortie
-                </a>
-                @endhasanyrole
+               @hasanyrole('SuperAdmin|Manager')
+<a href="{{ route('equipments.index') }}" class="px-4 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 flex items-center gap-2 transition-colors">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+    </svg>
+    Nouvelle sortie
+</a>
+@endhasanyrole
             </div>
         </div>
 
