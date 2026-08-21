@@ -22,22 +22,22 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
                             <div class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">À FAIRE</div>
-                            <div class="text-2xl font-bold text-gray-800">{{ $stats['todo'] }}</div>
+                            <div class="text-2xl font-bold text-gray-800">{{ $stats['todo'] ?? 0 }}</div>
                             <div class="mt-2"><span class="inline-block w-2 h-2 rounded-full bg-gray-300"></span></div>
                         </div>
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
                             <div class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">EN COURS</div>
-                            <div class="text-2xl font-bold text-[#4b49ac]">{{ $stats['in_progress'] }}</div>
+                            <div class="text-2xl font-bold text-[#4b49ac]">{{ $stats['in_progress'] ?? 0 }}</div>
                             <div class="mt-2"><span class="inline-block w-2 h-2 rounded-full bg-[#4b49ac] animate-pulse"></span></div>
                         </div>
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
                             <div class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">TERMINÉES</div>
-                            <div class="text-2xl font-bold text-green-500">{{ $stats['done'] }}</div>
+                            <div class="text-2xl font-bold text-green-500">{{ $stats['done'] ?? 0 }}</div>
                             <div class="mt-2"><span class="inline-block w-2 h-2 rounded-full bg-green-500"></span></div>
                         </div>
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
                             <div class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">EN RETARD</div>
-                            <div class="text-2xl font-bold text-red-500">{{ $stats['overdue'] }}</div>
+                            <div class="text-2xl font-bold text-red-500">{{ $stats['overdue'] ?? 0 }}</div>
                             <div class="mt-2"><span class="inline-block w-2 h-2 rounded-full bg-red-500"></span></div>
                         </div>
                     </div>
@@ -51,20 +51,20 @@
                             <div class="w-56 h-56 relative">
                                 <canvas id="taskChart"></canvas>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span class="text-4xl font-bold text-gray-800">{{ $stats['todo'] + $stats['in_progress'] }}</span>
+                                    <span class="text-4xl font-bold text-gray-800">{{ ($stats['todo'] ?? 0) + ($stats['in_progress'] ?? 0) }}</span>
                                     <span class="text-xs text-gray-500 uppercase font-semibold mt-1">Tâches actives</span>
                                 </div>
                             </div>
                         </div>
 
-                        {{-- MES TÂCHES ASSIGNÉES (NOUVELLE SECTION) --}}
+                        {{-- MES TÂCHES ASSIGNÉES --}}
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-0 h-full overflow-hidden flex flex-col min-h-[350px]">
                             <div class="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                                 <h3 class="font-bold text-gray-800 flex items-center gap-2">
                                     <svg class="w-5 h-5 text-[#4b49ac]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                                     Mes Tâches
                                 </h3>
-                                <span class="text-xs font-medium bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{{ $stats['in_progress'] + $stats['todo'] }} en cours</span>
+                                <span class="text-xs font-medium bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{{ ($stats['in_progress'] ?? 0) + ($stats['todo'] ?? 0) }} en cours</span>
                             </div>
 
                             <div class="p-4 overflow-y-auto flex-1 custom-scrollbar" style="max-height: 300px;">
@@ -123,14 +123,14 @@
                         </div>
                     </div>
 
-                    {{-- 3. ÉVÉNEMENTS À VENIR --}}
+                    {{-- 3. ÉVÉNEMENTS À VENIR (Sécurisé) --}}
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                             <h3 class="font-semibold text-gray-800">Évènements à venir</h3>
                             <a href="{{ route('calendar.index') }}" class="text-sm text-[#4b49ac] hover:underline">Voir calendrier</a>
                         </div>
                         
-                        @if($upcomingEvents->count() > 0)
+                        @if(isset($upcomingEvents) && $upcomingEvents->count() > 0)
                             <div class="divide-y divide-gray-100">
                                 @foreach($upcomingEvents as $event)
                                 <div class="p-4 flex items-center hover:bg-gray-50 transition group">
@@ -179,23 +179,25 @@
 
                         {{-- Liste des favoris --}}
                         <div class="space-y-4">
-                            @forelse($recentProjects->take(4) as $project)
-                            <a href="{{ route('projects.show', $project) }}" class="group flex items-center p-3 rounded-lg border border-gray-100 hover:border-[#4b49ac] hover:shadow-sm transition cursor-pointer bg-gray-50 hover:bg-white">
-                                <div class="w-8 h-8 rounded bg-white border border-gray-200 flex items-center justify-center mr-3 text-gray-500 font-bold text-xs" style="color: {{ $project->color ?? '#4b49ac' }}">
-                                    {{ strtoupper(substr($project->name, 0, 2)) }}
+                            @if(isset($recentProjects) && $recentProjects->count() > 0)
+                                @foreach($recentProjects->take(4) as $project)
+                                <a href="{{ route('projects.show', $project) }}" class="group flex items-center p-3 rounded-lg border border-gray-100 hover:border-[#4b49ac] hover:shadow-sm transition cursor-pointer bg-gray-50 hover:bg-white">
+                                    <div class="w-8 h-8 rounded bg-white border border-gray-200 flex items-center justify-center mr-3 text-gray-500 font-bold text-xs" style="color: {{ $project->color ?? '#4b49ac' }}">
+                                        {{ strtoupper(substr($project->name, 0, 2)) }}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 truncate">{{ $project->name }}</p>
+                                        <p class="text-[10px] text-gray-400">Projet • {{ $project->tasks_count ?? 0 }} tâches</p>
+                                    </div>
+                                    <svg class="w-4 h-4 text-gray-300 group-hover:text-[#4b49ac]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                </a>
+                                @endforeach
+                            @else
+                                <div class="text-center py-10 opacity-50">
+                                    <div class="mb-2 text-3xl">⭐</div>
+                                    <p class="text-xs text-gray-500">Aucun favori pour le moment</p>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 truncate">{{ $project->name }}</p>
-                                    <p class="text-[10px] text-gray-400">Projet • {{ $project->tasks_count }} tâches</p>
-                                </div>
-                                <svg class="w-4 h-4 text-gray-300 group-hover:text-[#4b49ac]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                            </a>
-                            @empty
-                            <div class="text-center py-10 opacity-50">
-                                <div class="mb-2 text-3xl">⭐</div>
-                                <p class="text-xs text-gray-500">Aucun favori pour le moment</p>
-                            </div>
-                            @endforelse
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -210,9 +212,9 @@
             const ctx = document.getElementById('taskChart');
             
             if(ctx) {
-                const todoCount = {{ $stats['todo'] }};
-                const inProgressCount = {{ $stats['in_progress'] }};
-                const doneCount = {{ $stats['done'] }};
+                const todoCount = {{ $stats['todo'] ?? 0 }};
+                const inProgressCount = {{ $stats['in_progress'] ?? 0 }};
+                const doneCount = {{ $stats['done'] ?? 0 }};
                 
                 const total = todoCount + inProgressCount + doneCount;
                 const isEmpty = total === 0;
