@@ -1,4 +1,4 @@
-# --- Étape 1 : Build du Front-end (Vite / Alpine) ---
+# --- Étape 1 : Build du Front-end (Vite / Alpine / Assets) ---
 FROM node:20 AS frontend
 WORKDIR /app
 COPY package*.json ./
@@ -6,32 +6,46 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# --- Étape 2 : Production PHP / Laravel ---
+# --- Étape 2 : Image de Production PHP + Nginx ---
 FROM php:8.2-fpm
 
-# Installation des dépendances système et extensions PostgreSQL / ZIP
+# Installation des dépendances système et des extensions PHP (MySQL, PostgreSQL, GD, ZIP)
 RUN apt-get update && apt-get install -y \
-    git curl libpq-dev libzip-dev zip unzip \
-    && docker-php-ext-install pdo pdo_pgsql zip
+    git \
+    curl \
+    libpq-dev \
+    libzip-dev \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    nginx \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql zip mbstring exif pcntl bcmath gd
 
-# Récupération de Composer
+# Installation de Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Répertoire de travail
 WORKDIR /var/www
 
-# Copie du code source
+# Copie du code source complet
 COPY . .
 
-# Copie des assets compilés depuis l'étape frontend
+# Copie des assets CSS/JS compilés depuis la première étape frontend
 COPY --from=frontend /app/public/build ./public/build
 
-# Installation des dépendances PHP sans dépendances dev
-RUN composer install --no-dev --optimize-autoloader
+# Installation des dépendances PHP optimisées pour la production
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Nettoyage de la configuration et gestion des permissions
-RUN php artisan config:clear
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Attribution des permissions pour le stockage et le cache
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-EXPOSE 8080
+# Copie et configuration du script de démarrage
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-CMD php artisan serve --host=0.0.0.0 --port=8080
+EXPOSE 80
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
