@@ -14,15 +14,6 @@
                     </svg>
                     Retour aux équipements
                 </a>
-                
-               @hasanyrole('SuperAdmin|Manager')
-<a href="{{ route('equipments.index') }}" class="px-4 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 flex items-center gap-2 transition-colors">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-    </svg>
-    Nouvelle sortie
-</a>
-@endhasanyrole
             </div>
         </div>
 
@@ -73,10 +64,10 @@
                                     @if($out->user)
                                         <div class="flex items-center gap-2">
                                             <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">
-                                                {{ strtoupper(substr($out->user->firstname ?? $out->user->name, 0, 1)) }}
+                                                {{ strtoupper(substr($out->user->name, 0, 1)) }}
                                             </div>
                                             <div>
-                                                <p class="font-medium text-gray-800">{{ $out->user->firstname }} {{ $out->user->lastname }}</p>
+                                                <p class="font-medium text-gray-800">{{ $out->user->name }}</p>
                                                 <p class="text-xs text-gray-400">{{ $out->user->email }}</p>
                                             </div>
                                         </div>
@@ -87,7 +78,7 @@
 
                                 <!-- Date de sortie -->
                                 <td class="py-3.5 px-4 text-gray-600 whitespace-nowrap">
-                                    {{ \Carbon\Carbon::parse($out->out_date)->format('d/m/Y') }}
+                                    {{ \Carbon\Carbon::parse($out->movement_date ?? $out->created_at)->format('d/m/Y') }}
                                 </td>
 
                                 <!-- Date de retour prévue -->
@@ -117,8 +108,8 @@
                                 </td>
 
                                 <!-- Notes -->
-                                <td class="py-3.5 px-4 text-gray-500 max-w-xs truncate" title="{{ $out->notes }}">
-                                    {{ $out->notes ?? '—' }}
+                                <td class="py-3.5 px-4 text-gray-500 max-w-xs truncate" title="{{ $out->reason }}">
+                                    {{ $out->reason ?? '—' }}
                                 </td>
 
                                 <!-- Actions -->

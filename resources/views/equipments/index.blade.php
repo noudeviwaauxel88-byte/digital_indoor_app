@@ -11,9 +11,20 @@
                 <a href="{{ route('equipments.stockout.history') }}" class="px-4 py-2 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 shadow-sm hover:bg-gray-50 text-sm">
                     Historique Sorties
                 </a>
-                <form action="{{ route('equipments.index') }}" method="GET">
-                    <div class="relative"><input type="text" name="search" placeholder="Rechercher..." value="{{ request('search') }}" class="px-4 py-2 pl-10 border rounded-lg w-64 focus:ring-primary focus:border-primary"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></div></div>
+                
+                {{-- Formulaire de Recherche activé (Intitulé / Type / Marque) --}}
+                <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2">
+                    <div class="relative">
+                        <input type="text" name="search" placeholder="Rechercher intitulé, type..." value="{{ request('search') }}" class="px-4 py-2 pl-10 border rounded-lg w-64 focus:ring-primary focus:border-primary">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+                    @if(request('search'))
+                        <a href="{{ route('equipments.index') }}" class="text-xs text-gray-500 hover:underline">Réinitialiser</a>
+                    @endif
                 </form>
+
                 <button @click="isSlideOverOpen = true" class="px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90">+ Nouveau</button>
             </div>
         </div>
@@ -22,7 +33,6 @@
             @forelse ($equipments as $equipment)
                 <div x-data="{ open: false }" class="relative bg-white rounded-lg shadow-sm overflow-hidden group border border-gray-200 hover:shadow-lg transition-shadow duration-300">
                     
-                    {{-- MODIFICATION ICI : On charge l'équipement AVEC ses items disponibles pour la modale --}}
                     <button @click="selectedEquipment = {{ Js::from($equipment->load('availableItems')) }}; isViewModalOpen = true" class="w-full text-left focus:outline-none">
                         <div class="bg-white p-4 h-56 flex items-center justify-center"><img class="max-h-full max-w-full object-contain" src="{{ $equipment->image_path ? asset('storage/' . $equipment->image_path) : 'https://placehold.co/400x400/e2e8f0/e2e8f0?text=.' }}" alt="{{ $equipment->title }}"></div>
                     </button>
@@ -33,8 +43,10 @@
                         <div class="mt-4 flex justify-between items-center">
                             <p class="text-lg font-bold text-gray-900">{{ number_format($equipment->price, 0, ',', ' ') }} FCFA</p>
                             
-                            {{-- MODIFICATION ICI : Affiche le compte des items disponibles --}}
-                            <p class="text-sm font-medium text-gray-600">Qté: {{ $equipment->available_items_count }}</p>
+                            {{-- Quantité en rouge si <= 3 --}}
+                            <p class="text-sm font-semibold {{ $equipment->available_items_count <= 3 ? 'text-red-600' : 'text-gray-600' }}">
+                                Qté: {{ $equipment->available_items_count }}
+                            </p>
                         </div>
                     </div>
                     
@@ -49,14 +61,16 @@
                         </div>
                     </div>
                     
-                    {{-- MODIFICATION ICI : Condition de rupture de stock --}}
-                    @if($equipment->available_items_count == 0)<div class="absolute top-2 left-2 px-2 py-1 bg-white/80 text-red-600 font-bold rounded-full text-xs uppercase tracking-wider shadow-sm">En rupture</div>@endif
+                    @if($equipment->available_items_count == 0)
+                        <div class="absolute top-2 left-2 px-2 py-1 bg-white/80 text-red-600 font-bold rounded-full text-xs uppercase tracking-wider shadow-sm">En rupture</div>
+                    @endif
                 </div>
             @empty
                 <div class="col-span-full text-center py-12"><p class="text-gray-500">Aucun équipement trouvé.</p></div>
             @endforelse
         </div>
 
+        <!-- SlideOver Création -->
         <div x-show="isSlideOverOpen" @keydown.escape.window="isSlideOverOpen = false" x-cloak class="relative z-10">
             <div x-show="isSlideOverOpen" x-transition:enter="ease-in-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in-out duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
             <div class="fixed inset-0 overflow-hidden"><div class="absolute inset-0 overflow-hidden"><div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
@@ -69,9 +83,6 @@
                      x-transition:leave-end="translate-x-full"
                      class="pointer-events-auto w-screen max-w-md">
                     
-                    {{-- ========================================================== --}}
-                    {{-- == MODIFICATION : Ajout de x-data pour les N° de série == --}}
-                    {{-- ========================================================== --}}
                     <form method="POST" action="{{ route('equipments.store') }}" enctype="multipart/form-data" 
                           class="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl"
                           x-data="{ quantity: {{ old('quantity', 0) }}, serials: {{ json_encode(old('serial_numbers', [])) }} }"> 
@@ -92,10 +103,6 @@
                                     <div><label for="title" class="block text-sm font-medium text-gray-900">Intitulé *</label><input type="text" name="title" id="title" value="{{ old('title') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"><x-input-error :messages="$errors->get('title')" class="mt-2" /></div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div><label for="price" class="block text-sm font-medium text-gray-900">Prix (FCFA) *</label><input type="number" name="price" id="price" value="{{ old('price') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"></div>
-                                        
-                                        {{-- =================================================== --}}
-                                        {{-- == MODIFICATION : Champ Quantité (avec Alpine) == --}}
-                                        {{-- =================================================== --}}
                                         <div>
                                             <label for="quantity" class="block text-sm font-medium text-gray-900">Quantité *</label>
                                             <input type="number" name="quantity" id="quantity" 
@@ -114,9 +121,6 @@
                                     <div><label for="brand" class="block text-sm font-medium text-gray-900">Marque</label><input type="text" name="brand" id="brand" value="{{ old('brand') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"></div>
                                     <div><label for="features" class="block text-sm font-medium text-gray-900">Caractéristiques</label><textarea name="features" id="features" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">{{ old('features') }}</textarea></div>
 
-                                    {{-- ======================================================== --}}
-                                    {{-- == NOUVELLE SECTION : Champs N° de série dynamiques == --}}
-                                    {{-- ======================================================== --}}
                                     <div x-show="quantity > 0" class="space-y-4">
                                         <label class="block text-sm font-medium text-gray-900">Numéros de Série</label>
                                         <template x-for="(serial, index) in Array.from({ length: quantity })" :key="index">
@@ -133,8 +137,6 @@
                                         <x-input-error :messages="$errors->get('serial_numbers')" class="mt-2" />
                                         <x-input-error :messages="$errors->get('serial_numbers.*')" class="mt-2" />
                                     </div>
-                                    {{-- ======================================================== --}}
-
                                 </div>
                             </div>
                         </div>
@@ -147,6 +149,7 @@
             </div></div></div>
         </div>
 
+        <!-- Modal Visualisation -->
         <div x-show="isViewModalOpen" @keydown.escape.window="isViewModalOpen = false" x-cloak class="relative z-20">
             <div x-show="isViewModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
@@ -170,8 +173,12 @@
                                             <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"><dt class="text-sm font-medium leading-6 text-gray-900">Intitulé</dt><dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0" x-text="selectedEquipment ? selectedEquipment.title : ''"></dd></div>
                                             <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"><dt class="text-sm font-medium leading-6 text-gray-900">Prix</dt><dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0" x-text="selectedEquipment ? new Intl.NumberFormat('fr-FR').format(selectedEquipment.price) + ' FCFA' : ''"></dd></div>
                                             
-                                            {{-- MODIFICATION ICI : Quantité disponible --}}
-                                            <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"><dt class="text-sm font-medium leading-6 text-gray-900">Quantité</dt><dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0" x-text="selectedEquipment ? selectedEquipment.available_items_count : ''"></dd></div>
+                                            <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                                                <dt class="text-sm font-medium leading-6 text-gray-900">Quantité</dt>
+                                                <dd class="mt-1 text-sm font-semibold sm:col-span-2 sm:mt-0" 
+                                                    :class="selectedEquipment && selectedEquipment.available_items_count <= 3 ? 'text-red-600' : 'text-gray-700'"
+                                                    x-text="selectedEquipment ? selectedEquipment.available_items_count : ''"></dd>
+                                            </div>
                                             
                                             <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                                                 <dt class="text-sm font-medium leading-6 text-gray-900">Date d'entrée</dt>
@@ -182,9 +189,6 @@
                                             <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"><dt class="text-sm font-medium leading-6 text-gray-900">Marque</dt><dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0" x-text="selectedEquipment ? selectedEquipment.brand : 'N/A'"></dd></div>
                                             <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"><dt class="text-sm font-medium leading-6 text-gray-900">Caractéristiques</dt><dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0" x-text="selectedEquipment ? selectedEquipment.features : 'Aucune'"></dd></div>
 
-                                            {{-- ======================================================== --}}
-                                            {{-- == NOUVELLE SECTION : Liste des N° de série en stock == --}}
-                                            {{-- ======================================================== --}}
                                             <div class="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                                                 <dt class="text-sm font-medium leading-6 text-gray-900">Articles en stock</dt>
                                                 <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
@@ -196,7 +200,6 @@
                                                     <span x-show="!selectedEquipment || selectedEquipment.available_items.length == 0">Aucun</span>
                                                 </dd>
                                             </div>
-                                            {{-- ======================================================== --}}
                                         </dl>
                                     </div>
                                 </div>

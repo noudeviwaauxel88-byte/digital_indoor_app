@@ -33,19 +33,16 @@
                             <select id="user_id" name="user_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
                                 <option value="">Sélectionner un utilisateur</option>
                                 @foreach($users as $user)
-                                    <option value="{{ $user->id }}" @selected(old('user_id', Auth::id()) == $user->id)>{{ $user->name }}</option>
+                                    <option value="{{ $user->id }}" @selected(old('user_id', Auth::id()) == $user->id)>
+                                        {{ $user->name }}
+                                    </option>
                                 @endforeach
                             </select>
-                             <x-input-error :messages="$errors->get('user_id')" class="mt-2" />
+                            <x-input-error :messages="$errors->get('user_id')" class="mt-2" />
                         </div>
                     </div>
 
-                    {{-- ================================================== --}}
-                    {{-- == SECTION : Projet (Recherche) & Autre == --}}
-                    {{-- ================================================== --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        
-                        {{-- Composant de recherche de Projet avec Alpine.js --}}
                         <div x-data="{ 
                             query: '', 
                             selectedProjectId: null, 
@@ -69,7 +66,6 @@
                             
                             <label class="block text-sm font-medium text-gray-700">Projet (Rechercher)</label>
                             
-                            {{-- Input visible pour la recherche --}}
                             <div class="relative mt-1">
                                 <input type="text" 
                                        x-model="query"
@@ -79,16 +75,13 @@
                                        placeholder="Commencez à taper le nom..."
                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
                                 
-                                {{-- Input caché qui contient l'ID envoyé au serveur --}}
                                 <input type="hidden" name="project_id" :value="selectedProjectId">
                                 
-                                {{-- Icône de recherche --}}
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                     <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                                 </div>
                             </div>
 
-                            {{-- Liste déroulante des résultats --}}
                             <ul x-show="isOpen && filteredProjects.length > 0" 
                                 class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
                                 style="display: none;">
@@ -106,7 +99,6 @@
                             <x-input-error :messages="$errors->get('project_id')" class="mt-2" />
                         </div>
 
-                        {{-- Champ Autre --}}
                         <div>
                             <label for="other_destination" class="block text-sm font-medium text-gray-700">Autre / Destination</label>
                             <input type="text" name="other_destination" id="other_destination" value="{{ old('other_destination') }}" placeholder="Ex: Maintenance, Don, Perte..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
