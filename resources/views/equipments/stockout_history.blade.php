@@ -1,6 +1,5 @@
 <x-app-layout>
     <div class="px-6 sm:px-10 py-8">
-        <!-- Header sans le bouton + Nouvelle sortie -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
                 <h1 class="text-2xl font-semibold text-gray-800">Historique des sorties de stock</h1>
@@ -17,14 +16,12 @@
             </div>
         </div>
 
-        <!-- Notification de succès -->
         @if(session('success'))
             <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg flex items-center justify-between">
                 <span>{{ session('success') }}</span>
             </div>
         @endif
 
-        <!-- Tableau des sorties -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <span class="text-sm font-medium text-gray-500">{{ $outs->total() }} mouvement(s) enregistré(s)</span>
@@ -34,29 +31,27 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            <th class="py-3 px-4">Équipement</th>
+                            <th class="py-3 px-4">Équipement(s) & N° de Série</th>
                             <th class="py-3 px-4">Bénéficiaire</th>
+                            <th class="py-3 px-4">Destination / Projet</th>
                             <th class="py-3 px-4">Date de sortie</th>
-                            <th class="py-3 px-4">Date de retour prévue</th>
-                            <th class="py-3 px-4">Statut</th>
-                            <th class="py-3 px-4">Notes</th>
+                            <th class="py-3 px-4">Motif</th>
                             <th class="py-3 px-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-sm">
                         @forelse ($outs as $out)
                             <tr class="hover:bg-gray-50/80 transition-colors">
-                                <!-- Équipement & Code Exemplaire -->
+                                <!-- Équipements -->
                                 <td class="py-3.5 px-4">
-                                    <div class="font-medium text-gray-900">
-                                        {{ $out->item->equipment->title ?? 'Équipement supprimé' }}
-                                    </div>
-                                    <div class="text-xs text-gray-400">
-                                        Marque: {{ $out->item->equipment->brand ?? 'N/A' }} 
-                                        @if(isset($out->item->code))
-                                            • <span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">#{{ $out->item->code }}</span>
-                                        @endif
-                                    </div>
+                                    <ul class="space-y-1">
+                                        @foreach($out->equipmentItems as $item)
+                                            <li>
+                                                <span class="font-medium text-gray-900">{{ $item->equipment->title ?? 'N/A' }}</span>
+                                                <span class="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">S/N: {{ $item->serial_number }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
                                 </td>
 
                                 <!-- Utilisateur -->
@@ -79,72 +74,38 @@
                                     @endif
                                 </td>
 
+                                <!-- Projet / Destination -->
+                                <td class="py-3.5 px-4 text-gray-700">
+                                    {{ $out->project->name ?? $out->other_destination ?? '—' }}
+                                </td>
+
                                 <!-- Date de sortie -->
                                 <td class="py-3.5 px-4 text-gray-600 whitespace-nowrap">
-                                    {{ \Carbon\Carbon::parse($out->movement_date ?? $out->created_at)->format('d/m/Y') }}
+                                    {{ $out->movement_date ? \Carbon\Carbon::parse($out->movement_date)->format('d/m/Y') : '—' }}
                                 </td>
 
-                                <!-- Date de retour prévue -->
-                                <td class="py-3.5 px-4 text-gray-600 whitespace-nowrap">
-                                    @if($out->return_date)
-                                        {{ \Carbon\Carbon::parse($out->return_date)->format('d/m/Y') }}
-                                    @else
-                                        <span class="text-gray-400">—</span>
-                                    @endif
-                                </td>
-
-                                <!-- Statut -->
-                                <td class="py-3.5 px-4 whitespace-nowrap">
-                                    @if($out->item && $out->item->status === 'returned')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            Retourné
-                                        </span>
-                                    @elseif($out->return_date && \Carbon\Carbon::parse($out->return_date)->isPast())
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            En retard
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            En cours
-                                        </span>
-                                    @endif
-                                </td>
-
-                                <!-- Notes -->
+                                <!-- Motif -->
                                 <td class="py-3.5 px-4 text-gray-500 max-w-xs truncate" title="{{ $out->reason }}">
                                     {{ $out->reason ?? '—' }}
                                 </td>
 
                                 <!-- Actions -->
                                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                                    @hasanyrole('SuperAdmin|Manager')
-                                        @if($out->item && $out->item->status !== 'returned')
-                                            <form method="POST" action="{{ route('equipments.stockout.return', $out) }}" onsubmit="return confirm('Confirmez-vous le retour de cet équipement ?');" class="inline-block">
-                                                @csrf
-                                                <button type="submit" class="px-3 py-1 bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 text-xs font-semibold rounded-md transition-colors flex items-center gap-1 ml-auto">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                    </svg>
-                                                    Marquer retourné
-                                                </button>
-                                            </form>
-                                        @else
-                                            <span class="text-xs text-gray-400 italic">Aucune action</span>
-                                        @endif
-                                    @endhasanyrole
+                                    <form method="POST" action="{{ route('equipments.stockout.return', $out) }}" onsubmit="return confirm('Confirmez-vous le retour de ces équipements en stock ?');" class="inline-block">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1 bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 text-xs font-semibold rounded-md transition-colors flex items-center gap-1 ml-auto">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            Remettre en stock
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-12">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3 text-gray-400">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-gray-500 font-medium">Aucun mouvement de sortie enregistré.</p>
-                                    </div>
+                                <td colspan="6" class="text-center py-12">
+                                    <p class="text-gray-500 font-medium">Aucun mouvement de sortie enregistré.</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -152,7 +113,6 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
             @if($outs->hasPages())
                 <div class="p-4 border-t border-gray-100">
                     {{ $outs->links() }}

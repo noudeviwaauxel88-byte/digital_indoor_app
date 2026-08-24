@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Equipment;
 use App\Models\EquipmentItem;
-use App\Models\EquipmentStockout;
 use App\Models\Project;
+use App\Models\StockMovement;
+use App\Models\StockMovementItem;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 class EquipmentController extends Controller
 {
     /**
-     * Display a listing of the resource with search support.
+     * Liste des équipements avec recherche et comptage du stock disponible.
      */
     public function index(Request $request)
     {
@@ -22,7 +23,6 @@ class EquipmentController extends Controller
             $q->where('status', 'available');
         }]);
 
-        // Filtrage dynamique : Intitulé (title) ou Type (type) ou Marque (brand)
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -38,7 +38,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Store a newly created equipment in storage.
+     * Enregistrer un nouvel équipement.
      */
     public function store(Request $request)
     {
@@ -78,7 +78,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Show the form for editing the specified equipment.
+     * Éditer un équipement.
      */
     public function edit(Equipment $equipment)
     {
@@ -86,7 +86,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Update the specified equipment in storage.
+     * Mettre à jour un équipement.
      */
     public function update(Request $request, Equipment $equipment)
     {
@@ -113,7 +113,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Remove the specified equipment from storage.
+     * Supprimer un équipement.
      */
     public function destroy(Equipment $equipment)
     {
@@ -127,13 +127,12 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Show the form for creating a stockout entry.
+     * Formulaire de création de sortie de stock.
      */
     public function createStockout(Equipment $equipment)
     {
         $equipment->load(['availableItems']);
         
-        // Tri sécurisé pour compatibilité PostgreSQL (firstname ou id)
         $users = User::all()->sortBy(function($user) {
             return $user->name ?? $user->firstname ?? $user->id;
         })->values();
@@ -144,7 +143,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Store a stockout transaction.
+     * Enregistrer une sortie de stock avec StockMovement et StockMovementItem.
      */
     public function storeStockout(Request $request, Equipment $equipment)
     {
@@ -160,20 +159,26 @@ class EquipmentController extends Controller
         ]);
 
         DB::transaction(function () use ($request, $validated) {
-            $documentPath = null;
+            $filePath = null;
             if ($request->hasFile('document')) {
-                $documentPath = $request->file('document')->store('stockouts', 'public');
+                $filePath = $request->file('document')->store('stockouts', 'public');
             }
 
+            // Création du mouvement de stock principal
+            $movement = StockMovement::create([
+                'user_id' => $validated['user_id'],
+                'project_id' => $validated['project_id'] ?? null,
+                'other_destination' => $validated['other_destination'] ?? null,
+                'movement_date' => $validated['movement_date'],
+                'reason' => $validated['reason'] ?? null,
+                'file_path' => $filePath,
+            ]);
+
+            // Association des articles du stock
             foreach ($validated['item_ids'] as $itemId) {
-                EquipmentStockout::create([
+                StockMovementItem::create([
+                    'stock_movement_id' => $movement->id,
                     'equipment_item_id' => $itemId,
-                    'user_id' => $validated['user_id'],
-                    'project_id' => $validated['project_id'] ?? null,
-                    'other_destination' => $validated['other_destination'] ?? null,
-                    'movement_date' => $validated['movement_date'],
-                    'reason' => $validated['reason'] ?? null,
-                    'document_path' => $documentPath,
                 ]);
 
                 EquipmentItem::where('id', $itemId)->update(['status' => 'out']);
@@ -184,25 +189,25 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Display stockout history.
+     * Historique des mouvements de sortie.
      */
     public function stockoutHistory()
     {
-        $outs = EquipmentStockout::with(['item.equipment', 'user', 'project'])
-            ->latest()
+        $outs = StockMovement::with(['user', 'project', 'equipmentItems.equipment'])
+            ->latest('movement_date')
             ->paginate(15);
 
         return view('equipments.stockout_history', compact('outs'));
     }
 
     /**
-     * Mark an item as returned to stock.
+     * Marquer le retour d'un mouvement de stock.
      */
-    public function returnStockout(EquipmentStockout $stockout)
+    public function returnStockout(StockMovement $stockout)
     {
         DB::transaction(function () use ($stockout) {
-            if ($stockout->item) {
-                $stockout->item->update(['status' => 'available']);
+            foreach ($stockout->equipmentItems as $item) {
+                $item->update(['status' => 'available']);
             }
         });
 
