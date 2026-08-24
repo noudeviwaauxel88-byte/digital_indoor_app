@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Storage;
 
 class EquipmentController extends Controller
 {
+    /**
+     * Liste des équipements avec comptage du stock disponible.
+     */
     public function index(Request $request)
     {
         $query = Equipment::withCount(['items as available_items_count' => function ($q) {
@@ -34,11 +37,54 @@ class EquipmentController extends Controller
         return view('equipments.index', compact('equipments'));
     }
 
+    /**
+     * Enregistrer un nouvel équipement en stock.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'entry_date' => 'nullable|date',
+            'brand' => 'nullable|string|max:255',
+            'features' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'serial_numbers' => 'nullable|array',
+            'serial_numbers.*' => 'required_with:serial_numbers|string|distinct',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image_path'] = $request->file('image')->store('equipments', 'public');
+        }
+
+        DB::transaction(function () use ($validated, $request) {
+            $equipment = Equipment::create($validated);
+
+            if (!empty($request->serial_numbers)) {
+                foreach ($request->serial_numbers as $serialNumber) {
+                    if (!empty(trim($serialNumber))) {
+                        EquipmentItem::create([
+                            'equipment_id' => $equipment->id,
+                            'serial_number' => trim($serialNumber),
+                            'status' => 'en_stock',
+                        ]);
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('equipments.index')->with('success', 'Équipement ajouté avec succès.');
+    }
+
+    /**
+     * Formulaire de sortie de stock.
+     */
     public function createStockout(Equipment $equipment)
     {
         $equipment->load('availableItems');
-        
-        $users = User::all()->sortBy(function($user) {
+
+        $users = User::all()->sortBy(function ($user) {
             return $user->name ?? $user->firstname ?? $user->id;
         })->values();
 
@@ -47,6 +93,9 @@ class EquipmentController extends Controller
         return view('equipments.stockout', compact('equipment', 'users', 'projects'));
     }
 
+    /**
+     * Traitement de la sortie de stock.
+     */
     public function storeStockout(Request $request, Equipment $equipment)
     {
         $validated = $request->validate([
@@ -88,6 +137,9 @@ class EquipmentController extends Controller
         return redirect()->route('equipments.index')->with('success', 'Sortie de stock enregistrée avec succès.');
     }
 
+    /**
+     * Historique des mouvements de sortie.
+     */
     public function stockoutHistory()
     {
         $outs = StockMovement::with(['user', 'project', 'equipmentItems.equipment'])
@@ -98,7 +150,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Annuler une sortie et remettre les éléments en stock.
+     * Annuler une sortie de stock.
      */
     public function returnStockout(StockMovement $stockout)
     {
@@ -114,6 +166,6 @@ class EquipmentController extends Controller
             $stockout->delete();
         });
 
-        return redirect()->back()->with('success', 'Sortie annulée avec succès, le matériel est de nouveau disponible.');
+        return redirect()->back()->with('success', 'Sortie annulée avec succès. Le matériel a été remis en stock.');
     }
 }
