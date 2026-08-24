@@ -25,23 +25,40 @@ class StockMovement extends Model
         ];
     }
 
+    /**
+     * L'utilisateur / bénéficiaire de la sortie.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Le projet associé à cette sortie.
+     */
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Les lignes de mouvement de stock associées.
+     */
     public function movementItems()
     {
         return $this->hasMany(StockMovementItem::class);
     }
 
+    /**
+     * Les articles/équipements physiques concernés par ce mouvement.
+     */
     public function equipmentItems()
     {
-        return $this->belongsToMany(EquipmentItem::class, 'stock_movement_items');
-    }
-
-    public function project()
-    {
-        return $this->belongsTo(Project::class);
+        return $this->belongsToMany(
+            EquipmentItem::class, 
+            'stock_movement_items', 
+            'stock_movement_id', 
+            'equipment_item_id'
+        );
     }
 }
