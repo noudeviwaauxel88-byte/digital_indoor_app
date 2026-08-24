@@ -132,7 +132,7 @@ class EquipmentController extends Controller
     public function createStockout(Equipment $equipment)
     {
         $equipment->load(['availableItems']);
-        $users = User::orderBy('name')->get();
+        $users = User::orderBy('firstname')->get();
         $projects = Project::orderBy('name')->get();
 
         return view('equipments.stockout', compact('equipment', 'users', 'projects'));
