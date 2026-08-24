@@ -56,10 +56,13 @@ class User extends Authenticatable
      * Accessor to dynamically create the 'name' attribute.
      * This ensures compatibility with other parts of the application.
      */
-    public function getNameAttribute(): string
-    {
-        return "{$this->firstname} {$this->lastname}";
+    public function getNameAttribute()
+{
+    if (isset($this->attributes['name'])) {
+        return $this->attributes['name'];
     }
+    return trim(($this->firstname ?? '') . ' ' . ($this->lastname ?? ''));
+}
 
     /**
      * The user has created multiple projects.
