@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="px-6 sm:px-10 py-8">
-        <!-- Header -->
+        <!-- Header sans le bouton + Nouvelle sortie -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
                 <h1 class="text-2xl font-semibold text-gray-800">Historique des sorties de stock</h1>
@@ -61,23 +61,23 @@
 
                                 <!-- Utilisateur -->
                                 <td class="py-3.5 px-4">
-    @if($out->user)
-        @php
-            $userName = $out->user->name ?? trim(($out->user->firstname ?? '') . ' ' . ($out->user->lastname ?? ''));
-        @endphp
-        <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">
-                {{ strtoupper(substr($userName, 0, 1)) }}
-            </div>
-            <div>
-                <p class="font-medium text-gray-800">{{ $userName }}</p>
-                <p class="text-xs text-gray-400">{{ $out->user->email }}</p>
-            </div>
-        </div>
-    @else
-        <span class="text-gray-400 italic">Non spécifié</span>
-    @endif
-</td>
+                                    @if($out->user)
+                                        @php
+                                            $userName = $out->user->name ?? trim(($out->user->firstname ?? '') . ' ' . ($out->user->lastname ?? ''));
+                                        @endphp
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">
+                                                {{ strtoupper(substr($userName, 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-gray-800">{{ $userName }}</p>
+                                                <p class="text-xs text-gray-400">{{ $out->user->email }}</p>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400 italic">Non spécifié</span>
+                                    @endif
+                                </td>
 
                                 <!-- Date de sortie -->
                                 <td class="py-3.5 px-4 text-gray-600 whitespace-nowrap">

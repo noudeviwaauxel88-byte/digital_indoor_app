@@ -12,7 +12,7 @@
                     Historique Sorties
                 </a>
                 
-                {{-- Formulaire de Recherche activé (Intitulé / Type / Marque) --}}
+                {{-- Formulaire de Recherche (Intitulé / Type / Marque) --}}
                 <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2">
                     <div class="relative">
                         <input type="text" name="search" placeholder="Rechercher intitulé, type..." value="{{ request('search') }}" class="px-4 py-2 pl-10 border rounded-lg w-64 focus:ring-primary focus:border-primary">
@@ -43,7 +43,7 @@
                         <div class="mt-4 flex justify-between items-center">
                             <p class="text-lg font-bold text-gray-900">{{ number_format($equipment->price, 0, ',', ' ') }} FCFA</p>
                             
-                            {{-- Quantité en rouge si <= 3 --}}
+                            {{-- Quantité rouge si <= 3 --}}
                             <p class="text-sm font-semibold {{ $equipment->available_items_count <= 3 ? 'text-red-600' : 'text-gray-600' }}">
                                 Qté: {{ $equipment->available_items_count }}
                             </p>

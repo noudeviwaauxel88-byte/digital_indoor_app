@@ -31,13 +31,13 @@
                         <div>
                             <label for="user_id" class="block text-sm font-medium text-gray-700">Demandeur *</label>
                             <select id="user_id" name="user_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
-    <option value="">Sélectionner un utilisateur</option>
-    @foreach($users as $user)
-        <option value="{{ $user->id }}" @selected(old('user_id', Auth::id()) == $user->id)>
-            {{ $user->name ?? trim(($user->firstname ?? '') . ' ' . ($user->lastname ?? '')) }}
-        </option>
-    @endforeach
-</select>
+                                <option value="">Sélectionner un utilisateur</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}" @selected(old('user_id', Auth::id()) == $user->id)>
+                                        {{ $user->name ?? trim(($user->firstname ?? '') . ' ' . ($user->lastname ?? '')) }}
+                                    </option>
+                                @endforeach
+                            </select>
                             <x-input-error :messages="$errors->get('user_id')" class="mt-2" />
                         </div>
                     </div>

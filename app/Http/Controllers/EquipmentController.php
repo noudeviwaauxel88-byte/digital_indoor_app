@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Equipment;
 use App\Models\EquipmentItem;
-use App\Models\Stockout;
+use App\Models\EquipmentStockout;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -132,7 +132,12 @@ class EquipmentController extends Controller
     public function createStockout(Equipment $equipment)
     {
         $equipment->load(['availableItems']);
-        $users = User::orderBy('firstname')->get();
+        
+        // Tri sécurisé pour compatibilité PostgreSQL (firstname ou id)
+        $users = User::all()->sortBy(function($user) {
+            return $user->name ?? $user->firstname ?? $user->id;
+        })->values();
+
         $projects = Project::orderBy('name')->get();
 
         return view('equipments.stockout', compact('equipment', 'users', 'projects'));
@@ -161,7 +166,7 @@ class EquipmentController extends Controller
             }
 
             foreach ($validated['item_ids'] as $itemId) {
-                Stockout::create([
+                EquipmentStockout::create([
                     'equipment_item_id' => $itemId,
                     'user_id' => $validated['user_id'],
                     'project_id' => $validated['project_id'] ?? null,
@@ -183,7 +188,7 @@ class EquipmentController extends Controller
      */
     public function stockoutHistory()
     {
-        $outs = Stockout::with(['item.equipment', 'user', 'project'])
+        $outs = EquipmentStockout::with(['item.equipment', 'user', 'project'])
             ->latest()
             ->paginate(15);
 
@@ -193,7 +198,7 @@ class EquipmentController extends Controller
     /**
      * Mark an item as returned to stock.
      */
-    public function returnStockout(Stockout $stockout)
+    public function returnStockout(EquipmentStockout $stockout)
     {
         DB::transaction(function () use ($stockout) {
             if ($stockout->item) {
