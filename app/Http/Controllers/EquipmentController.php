@@ -168,4 +168,25 @@ class EquipmentController extends Controller
 
         return redirect()->back()->with('success', 'Sortie annulée avec succès. Le matériel a été remis en stock.');
     }
+
+    /**
+     * Supprimer un équipement et ses éléments associés.
+     */
+    public function destroy(Equipment $equipment)
+    {
+        DB::transaction(function () use ($equipment) {
+            // Supprimer l'image de couverture si elle existe
+            if ($equipment->image_path) {
+                Storage::disk('public')->delete($equipment->image_path);
+            }
+
+            // Supprimer les éléments (items) associés à cet équipement
+            $equipment->items()->delete();
+
+            // Supprimer l'équipement
+            $equipment->delete();
+        });
+
+        return redirect()->route('equipments.index')->with('success', 'Équipement supprimé avec succès.');
+    }
 }
