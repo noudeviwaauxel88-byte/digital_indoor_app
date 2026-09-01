@@ -189,4 +189,41 @@ class EquipmentController extends Controller
 
         return redirect()->route('equipments.index')->with('success', 'Équipement supprimé avec succès.');
     }
+
+    /**
+     * Formulaire d'édition d'un équipement.
+     */
+    public function edit(Equipment $equipment)
+    {
+        $equipment->load('items');
+        return view('equipments.edit', compact('equipment'));
+    }
+
+    /**
+     * Mise à jour d'un équipement.
+     */
+    public function update(Request $request, Equipment $equipment)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'entry_date' => 'nullable|date',
+            'brand' => 'nullable|string|max:255',
+            'features' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($request->hasFile('image')) {
+            // Supprimer l'ancienne image si elle existe
+            if ($equipment->image_path) {
+                Storage::disk('public')->delete($equipment->image_path);
+            }
+            $validated['image_path'] = $request->file('image')->store('equipments', 'public');
+        }
+
+        $equipment->update($validated);
+
+        return redirect()->route('equipments.index')->with('success', 'Équipement mis à jour avec succès.');
+    }
 }
