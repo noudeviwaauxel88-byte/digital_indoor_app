@@ -9,7 +9,8 @@ php artisan event:cache
 # Exécution automatique des migrations sur la base de données
 php artisan migrate --force
 
-# Création du lien symbolique pour le stockage d'images/documents
+# Nettoyage préalable et création propre du lien symbolique de stockage
+rm -rf public/storage
 php artisan storage:link || true
 
 # Lancer le Queue Worker en arrière-plan (gratuit, dans le même conteneur)
