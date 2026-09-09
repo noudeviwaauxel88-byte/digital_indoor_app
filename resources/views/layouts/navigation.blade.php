@@ -127,27 +127,27 @@
     </div>
     
     <div x-data="{ openStock: false }">
-        <!-- Bouton principal Stock -->
-        <button @click="openStock = !openStock" class="flex items-center justify-between w-full px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg">
-            <span class="flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                <span>Stock</span>
-            </span>
-            <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': openStock }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+    <!-- Bouton principal Stock -->
+    <button @click="openStock = !openStock" class="flex items-center justify-between w-full px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg">
+        <span class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            <span>Stock</span>
+        </span>
+        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': openStock }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+    </button>
+
+    <!-- Sous-menu -->
+    <div x-show="openStock" x-collapse class="pl-8 mt-1 space-y-1">
+        <a href="{{ route('equipments.index') }}" class="block px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900">
+            Liste des équipements
+        </a>
+
+        {{-- Visible pour SuperAdmin, ADMIN ou Admin --}}
+        @hasanyrole('SuperAdmin', 'ADMIN', 'Admin')
+        <button @click="$dispatch('open-modal-add-type')" class="block w-full text-left px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
+            + Type équipement
         </button>
-
-        <!-- Sous-menu s'affichant au clic sur Stock -->
-        <div x-show="openStock" x-collapse class="pl-8 mt-1 space-y-1">
-            <a href="{{ route('equipments.index') }}" class="block px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900">
-                Liste des équipements
-            </a>
-
-            <!-- Visible UNIQUEMENT pour le SuperAdmin -->
-            @hasrole('SuperAdmin')
-            <button @click="$dispatch('open-modal-add-type')" class="block w-full text-left px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
-                + Type équipement
-            </button>
-            @endhasrole
-        </div>
+        @endhasanyrole
     </div>
+</div>
 </nav>
