@@ -6,28 +6,33 @@
     }">
         
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-semibold text-gray-800">Gestion du Stock</h1>
-            <div class="flex items-center gap-4">
-                <a href="{{ route('equipments.stockout.history') }}" class="px-4 py-2 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 shadow-sm hover:bg-gray-50 text-sm">
-                    Historique Sorties
-                </a>
-                
-                {{-- Formulaire de Recherche (Intitulé / Type / Marque) --}}
-                <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2">
-                    <div class="relative">
-                        <input type="text" name="search" placeholder="Rechercher intitulé, type..." value="{{ request('search') }}" class="px-4 py-2 pl-10 border rounded-lg w-64 focus:ring-primary focus:border-primary">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        </div>
-                    </div>
-                    @if(request('search'))
-                        <a href="{{ route('equipments.index') }}" class="text-xs text-gray-500 hover:underline">Réinitialiser</a>
-                    @endif
-                </form>
+    <h1 class="text-2xl font-semibold text-gray-800">Gestion du Stock</h1>
+    <div class="flex items-center gap-4">
+        <a href="{{ route('equipments.stockout.history') }}" class="px-4 py-2 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 shadow-sm hover:bg-gray-50 text-sm">
+            Historique Sorties
+        </a>
 
-                <button @click="isSlideOverOpen = true" class="px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90">+ Nouveau</button>
+        {{-- Bouton pour ouvrir la modale d'ajout de Type d'équipement --}}
+        <button @click="$dispatch('open-modal-add-type')" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 text-sm">
+            + Type Équipement
+        </button>
+        
+        {{-- Formulaire de Recherche --}}
+        <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2">
+            <div class="relative">
+                <input type="text" name="search" placeholder="Rechercher intitulé, type..." value="{{ request('search') }}" class="px-4 py-2 pl-10 border rounded-lg w-64 focus:ring-primary focus:border-primary">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
             </div>
-        </div>
+            @if(request('search'))
+                <a href="{{ route('equipments.index') }}" class="text-xs text-gray-500 hover:underline">Réinitialiser</a>
+            @endif
+        </form>
+
+        <button @click="isSlideOverOpen = true" class="px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90">+ Nouveau</button>
+    </div>
+</div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             @forelse ($equipments as $equipment)
