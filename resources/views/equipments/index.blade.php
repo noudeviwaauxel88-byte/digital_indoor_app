@@ -95,11 +95,18 @@
                             <div class="relative mt-6 flex-1 px-4 sm:px-6">
                                 <div class="space-y-6">
                                     <div><label for="image" class="block text-sm font-medium text-gray-900">Image</label><input type="file" name="image" id="image" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"><x-input-error :messages="$errors->get('image')" class="mt-2" /></div>
+                                    
                                     <div>
                                         <label for="type" class="block text-sm font-medium text-gray-900">Type *</label>
-                                        <select id="type" name="type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"><option value="Tablette">Tablette</option><option value="Panel">Panel</option><option value="All-in-one">All-in-one</option><option value="Camera">Camera</option><option value="Accessoire">Accessoire</option><option value="Ordinateur">Ordinateur</option><option value="Point d'accès">Point d'accès</option><option value="Audio">Audio</option></select>
+                                        <select id="equipment_type_select" name="type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                                            <option value="">-- Sélectionner un type --</option>
+                                            @foreach($equipmentTypes as $type)
+                                                <option value="{{ $type->name }}" {{ old('type') == $type->name ? 'selected' : '' }}>{{ $type->name }}</option>
+                                            @endforeach
+                                        </select>
                                         <x-input-error :messages="$errors->get('type')" class="mt-2" />
                                     </div>
+
                                     <div><label for="title" class="block text-sm font-medium text-gray-900">Intitulé *</label><input type="text" name="title" id="title" value="{{ old('title') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"><x-input-error :messages="$errors->get('title')" class="mt-2" /></div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div><label for="price" class="block text-sm font-medium text-gray-900">Prix (FCFA) *</label><input type="number" name="price" id="price" value="{{ old('price') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"></div>
@@ -208,6 +215,113 @@
                         <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6"><button @click="isViewModalOpen = false" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">Fermer</button></div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SlideOver Modal Création de Type d'équipement -->
+    <div 
+        x-data="{ 
+            openTypeModal: false,
+            typeName: '',
+            imageFile: null,
+            imagePreview: null,
+            loading: false,
+
+            handleImage(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.imageFile = file;
+                    this.imagePreview = URL.createObjectURL(file);
+                }
+            },
+
+            async submitType() {
+                if (!this.typeName) return;
+                this.loading = true;
+
+                let formData = new FormData();
+                formData.append('name', this.typeName);
+                if (this.imageFile) {
+                    formData.append('image', this.imageFile);
+                }
+                formData.append('_token', '{{ csrf_token() }}');
+
+                try {
+                    let res = await fetch('{{ route('equipment_types.store') }}', {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json' },
+                        body: formData
+                    });
+                    let data = await res.json();
+
+                    if (res.ok && data.success) {
+                        let select = document.getElementById('equipment_type_select');
+                        if (select) {
+                            let option = new Option(data.type.name, data.type.name, true, true);
+                            select.add(option);
+                        }
+
+                        this.typeName = '';
+                        this.imageFile = null;
+                        this.imagePreview = null;
+                        this.openTypeModal = false;
+                    } else {
+                        alert(data.message || 'Une erreur est survenue.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    this.loading = false;
+                }
+            }
+        }"
+        @open-modal-add-type.window="openTypeModal = true"
+        x-show="openTypeModal" 
+        x-cloak
+        class="fixed inset-0 z-50 overflow-hidden"
+    >
+        <!-- Overlay sombre -->
+        <div @click="openTypeModal = false" class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+
+        <!-- Panneau SlideOver -->
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white dark:bg-gray-800 shadow-xl flex flex-col justify-between">
+                
+                <div class="p-6 bg-indigo-600 text-white flex items-center justify-between">
+                    <h2 class="text-lg font-bold">Ajouter un type d'équipement</h2>
+                    <button @click="openTypeModal = false" class="text-white hover:text-gray-200">&times;</button>
+                </div>
+
+                <form @submit.prevent="submitType" class="p-6 space-y-6 flex-1 overflow-y-auto">
+                    <!-- Champ 1: Image -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Image</label>
+                        <div class="flex items-center justify-center w-full">
+                            <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 dark:bg-gray-700">
+                                <template x-if="!imagePreview">
+                                    <span class="text-xs text-gray-500">Télécharger une image</span>
+                                </template>
+                                <template x-if="imagePreview">
+                                    <img :src="imagePreview" class="h-full object-contain rounded-lg p-2" />
+                                </template>
+                                <input type="file" class="hidden" accept="image/*" @change="handleImage" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Champ 2: Texte -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom du type *</label>
+                        <input type="text" x-model="typeName" required placeholder="Ex: Informatique, Réseau..." class="w-full rounded-md border-gray-300 dark:bg-gray-900 dark:text-white shadow-sm" />
+                    </div>
+
+                    <!-- Action -->
+                    <div class="pt-4 flex justify-end gap-3">
+                        <button type="button" @click="openTypeModal = false" class="px-4 py-2 text-sm text-gray-600">Annuler</button>
+                        <button type="submit" :disabled="loading" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Ajouter</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

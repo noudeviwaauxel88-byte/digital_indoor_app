@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Models\EquipmentType;
 
 class EquipmentController extends Controller
 {
@@ -33,8 +34,9 @@ class EquipmentController extends Controller
         }
 
         $equipments = $query->latest()->get();
+        $equipmentTypes = EquipmentType::all();
 
-        return view('equipments.index', compact('equipments'));
+        return view('equipments.index', compact('equipments', 'equipmentTypes'));
     }
 
     /**
@@ -175,15 +177,11 @@ class EquipmentController extends Controller
     public function destroy(Equipment $equipment)
     {
         DB::transaction(function () use ($equipment) {
-            // Supprimer l'image de couverture si elle existe
             if ($equipment->image_path) {
                 Storage::disk('public')->delete($equipment->image_path);
             }
 
-            // Supprimer les éléments (items) associés à cet équipement
             $equipment->items()->delete();
-
-            // Supprimer l'équipement
             $equipment->delete();
         });
 
@@ -215,7 +213,6 @@ class EquipmentController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            // Supprimer l'ancienne image si elle existe
             if ($equipment->image_path) {
                 Storage::disk('public')->delete($equipment->image_path);
             }
@@ -225,5 +222,43 @@ class EquipmentController extends Controller
         $equipment->update($validated);
 
         return redirect()->route('equipments.index')->with('success', 'Équipement mis à jour avec succès.');
+    }
+
+    /**
+     * Créer un nouveau type d'équipement.
+     */
+    public function storeType(Request $request)
+    {
+        if (!auth()->user()->hasRole('SuperAdmin')) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Action non autorisée.'], 403);
+            }
+            abort(403, 'Action non autorisée.');
+        }
+
+        $request->validate([
+            'name'  => 'required|string|max:255|unique:equipment_types,name',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+        ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('equipment_types', 'public');
+        }
+
+        $type = EquipmentType::create([
+            'name'  => $request->name,
+            'image' => $imagePath,
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Type d\'équipement ajouté avec succès !',
+                'type'    => $type
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Type d\'équipement ajouté avec succès !');
     }
 }

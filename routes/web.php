@@ -89,6 +89,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/equipments/stockout/{stockMovement}', [EquipmentController::class, 'destroyStockOut'])->name('equipments.stockout.destroy');
     Route::post('/equipments/stockout/{equipmentOut}/return', [EquipmentController::class, 'returnStockOut'])->name('equipments.stockout.return');
     
+    // Types d'équipements
+    Route::post('/equipment-types', [EquipmentController::class, 'storeType'])->name('equipment_types.store');
+
     // Calendrier (Events)
     Route::get('/calendrier', [EventController::class, 'index'])->name('calendar.index');
     Route::post('/calendrier', [EventController::class, 'store'])->name('calendar.store');
@@ -112,15 +115,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity_logs.index');
 
     // Route temporaire pour exécuter les migrations
-Route::get('/run-migrations', function () {
-    try {
-        Artisan::call('migrate', ['--force' => true]);
-        return "<h1>SUCCÈS !</h1><p>Les migrations ont été exécutées avec succès.</p><pre>" . Artisan::output() . "</pre>";
-    } catch (\Exception $e) {
-        return "Erreur lors de la migration : " . $e->getMessage();
-    }
-});
-
+    Route::get('/run-migrations', function () {
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+            return "<h1>SUCCÈS !</h1><p>Les migrations ont été exécutées avec succès.</p><pre>" . Artisan::output() . "</pre>";
+        } catch (\Exception $e) {
+            return "Erreur lors de la migration : " . $e->getMessage();
+        }
+    });
 });
 
 require __DIR__.'/auth.php';
