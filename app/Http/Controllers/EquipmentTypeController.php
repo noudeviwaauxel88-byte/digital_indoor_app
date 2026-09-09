@@ -9,16 +9,15 @@ use Illuminate\Support\Facades\Storage;
 class EquipmentTypeController extends Controller
 {
     /**
-     * Enregistrer un nouveau type d'équipement avec son image.
+     * Enregistrer un nouveau type.
      */
     public function store(Request $request)
     {
         $request->validate([
             'name'  => 'required|string|max:255|unique:equipment_types,name',
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
-        // Sauvegarde de l'image dans storage/app/public/equipment_types
         $imagePath = $request->file('image')->store('equipment_types', 'public');
 
         EquipmentType::create([
@@ -26,45 +25,50 @@ class EquipmentTypeController extends Controller
             'image' => $imagePath,
         ]);
 
-        return back()->with('success', 'Type d\'équipement ajouté avec succès.');
+        return redirect()->back()->with('success', 'Type d\'équipement ajouté avec succès.');
     }
 
     /**
-     * Mettre à jour un type d'équipement existant.
+     * Mettre à jour un type existant (nom et/ou image).
      */
     public function update(Request $request, EquipmentType $equipmentType)
     {
         $request->validate([
             'name'  => 'required|string|max:255|unique:equipment_types,name,' . $equipmentType->id,
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
-        // Si une nouvelle image est téléversée, supprimer l'ancienne du disque public
+        $data = ['name' => $request->name];
+
         if ($request->hasFile('image')) {
-            if ($equipmentType->image && Storage::disk('public')->exists($equipmentType->image)) {
+            // Supprimer l'ancienne image si elle existe
+            if ($equipmentType->image) {
                 Storage::disk('public')->delete($equipmentType->image);
             }
-            $equipmentType->image = $request->file('image')->store('equipment_types', 'public');
+            $data['image'] = $request->file('image')->store('equipment_types', 'public');
         }
 
-        $equipmentType->name = $request->name;
-        $equipmentType->save();
+        $equipmentType->update($data);
 
-        return back()->with('success', 'Type d\'équipement mis à jour avec succès.');
+        return redirect()->back()->with('success', 'Type d\'équipement mis à jour.');
     }
 
     /**
-     * Supprimer un type d'équipement et son fichier image associé.
+     * Supprimer un type.
      */
     public function destroy(EquipmentType $equipmentType)
     {
-        // Supprimer le fichier image du disque public
-        if ($equipmentType->image && Storage::disk('public')->exists($equipmentType->image)) {
+        // Sécurité : On empêche la suppression si des équipements utilisent ce type
+        if ($equipmentType->equipments()->count() > 0) {
+            return redirect()->back()->with('error', 'Impossible : des équipements utilisent déjà ce type.');
+        }
+
+        if ($equipmentType->image) {
             Storage::disk('public')->delete($equipmentType->image);
         }
 
         $equipmentType->delete();
 
-        return back()->with('success', 'Type d\'équipement supprimé avec succès.');
+        return redirect()->back()->with('success', 'Type d\'équipement supprimé.');
     }
 }

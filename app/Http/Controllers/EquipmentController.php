@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Equipment;
 use App\Models\EquipmentItem;
+use App\Models\EquipmentType;
 use App\Models\Project;
 use App\Models\StockMovement;
 use App\Models\StockMovementItem;
@@ -11,7 +12,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use App\Models\EquipmentType;
 
 class EquipmentController extends Controller
 {
@@ -20,16 +20,20 @@ class EquipmentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Equipment::withCount(['items as available_items_count' => function ($q) {
-            $q->where('status', 'en_stock');
-        }]);
+        $query = Equipment::with(['equipmentType', 'items'])
+            ->withCount(['items as available_items_count' => function ($q) {
+                $q->where('status', 'en_stock');
+            }]);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('type', 'like', "%{$search}%")
-                  ->orWhere('brand', 'like', "%{$search}%");
+                  ->orWhere('brand', 'like', "%{$search}%")
+                  ->orWhereHas('equipmentType', function ($t) use ($search) {
+                      $t->where('name', 'like', "%{$search}%");
+                  });
             });
         }
 
@@ -40,21 +44,25 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Enregistrer un nouvel équipement en stock.
+     * Enregistrer un nouvel équipement en stock avec ses numéros de série.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'type' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'entry_date' => 'nullable|date',
-            'brand' => 'nullable|string|max:255',
-            'features' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'serial_numbers' => 'nullable|array',
-            'serial_numbers.*' => 'required_with:serial_numbers|string|distinct',
+            'equipment_type_id' => 'required|exists:equipment_types,id',
+            'title'             => 'required|string|max:255',
+            'price'             => 'required|numeric|min:0',
+            'entry_date'        => 'nullable|date',
+            'brand'             => 'nullable|string|max:255',
+            'features'          => 'nullable|string',
+            'image'             => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'serial_numbers'    => 'required|array|min:1',
+            'serial_numbers.*'  => 'required|string|distinct',
         ]);
+
+        // Assurer la cohérence avec le champ 'type' historique
+        $typeObj = EquipmentType::findOrFail($request->equipment_type_id);
+        $validated['type'] = $typeObj->name;
 
         if ($request->hasFile('image')) {
             $validated['image_path'] = $request->file('image')->store('equipments', 'public');
@@ -67,9 +75,9 @@ class EquipmentController extends Controller
                 foreach ($request->serial_numbers as $serialNumber) {
                     if (!empty(trim($serialNumber))) {
                         EquipmentItem::create([
-                            'equipment_id' => $equipment->id,
+                            'equipment_id'  => $equipment->id,
                             'serial_number' => trim($serialNumber),
-                            'status' => 'en_stock',
+                            'status'        => 'en_stock',
                         ]);
                     }
                 }
@@ -101,14 +109,14 @@ class EquipmentController extends Controller
     public function storeStockout(Request $request, Equipment $equipment)
     {
         $validated = $request->validate([
-            'movement_date' => 'required|date',
-            'user_id' => 'required|exists:users,id',
-            'project_id' => 'nullable|exists:projects,id',
+            'movement_date'     => 'required|date',
+            'user_id'           => 'required|exists:users,id',
+            'project_id'        => 'nullable|exists:projects,id',
             'other_destination' => 'nullable|string|max:255',
-            'item_ids' => 'required|array|min:1',
-            'item_ids.*' => 'exists:equipment_items,id',
-            'reason' => 'nullable|string',
-            'document' => 'nullable|file|mimes:pdf,doc,docx,png,jpg,jpeg|max:5000',
+            'item_ids'          => 'required|array|min:1',
+            'item_ids.*'        => 'exists:equipment_items,id',
+            'reason'            => 'nullable|string',
+            'document'          => 'nullable|file|mimes:pdf,doc,docx,png,jpg,jpeg|max:5000',
         ]);
 
         DB::transaction(function () use ($request, $validated) {
@@ -118,12 +126,12 @@ class EquipmentController extends Controller
             }
 
             $movement = StockMovement::create([
-                'user_id' => $validated['user_id'],
-                'project_id' => $validated['project_id'] ?? null,
+                'user_id'           => $validated['user_id'],
+                'project_id'        => $validated['project_id'] ?? null,
                 'other_destination' => $validated['other_destination'] ?? null,
-                'movement_date' => $validated['movement_date'],
-                'reason' => $validated['reason'] ?? null,
-                'file_path' => $filePath,
+                'movement_date'     => $validated['movement_date'],
+                'reason'            => $validated['reason'] ?? null,
+                'file_path'         => $filePath,
             ]);
 
             foreach ($validated['item_ids'] as $itemId) {
@@ -203,13 +211,13 @@ class EquipmentController extends Controller
     public function update(Request $request, Equipment $equipment)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'type' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
+            'title'      => 'required|string|max:255',
+            'type'       => 'required|string|max:255',
+            'price'      => 'required|numeric|min:0',
             'entry_date' => 'nullable|date',
-            'brand' => 'nullable|string|max:255',
-            'features' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'brand'      => 'nullable|string|max:255',
+            'features'   => 'nullable|string',
+            'image'      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($request->hasFile('image')) {
@@ -225,7 +233,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Créer un nouveau type d'équipement.
+     * Créer un nouveau type d'équipement via API JSON ou formulaire classique.
      */
     public function storeType(Request $request)
     {

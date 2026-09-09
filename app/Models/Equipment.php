@@ -12,6 +12,7 @@ class Equipment extends Model
     protected $table = 'equipments';
 
     protected $fillable = [
+        'equipment_type_id',
         'title',
         'type',
         'price',
@@ -20,6 +21,14 @@ class Equipment extends Model
         'features',
         'image_path',
     ];
+
+    /**
+     * Relation avec le Type d'équipement (pour récupérer l'image globale du type).
+     */
+    public function equipmentType()
+    {
+        return $this->belongsTo(EquipmentType::class, 'equipment_type_id');
+    }
 
     /**
      * Tous les exemplaires / articles associés à cet équipement.

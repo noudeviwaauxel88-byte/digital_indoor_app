@@ -126,6 +126,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return "Erreur lors de la migration : " . $e->getMessage();
         }
     });
+
+    // Routes pour la gestion des Types d'Équipements
+    Route::resource('equipment-types', EquipmentTypeController::class)->only(['store', 'update', 'destroy']);
 });
 
 require __DIR__.'/auth.php';
