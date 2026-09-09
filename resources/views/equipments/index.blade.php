@@ -3,67 +3,119 @@
         
         <!-- En-tête de la page -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Gestion du Stock</h1>
+            <h1 class="text-2xl font-bold text-gray-800">Gestion du Stock</h1>
             
             <div class="flex flex-wrap items-center gap-3">
-                <a href="{{ route('equipments.stockout.history') }}" class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+                <!-- Bouton Historique Sorties -->
+                <a href="{{ route('equipments.stockout.history') }}" class="px-4 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 shadow-sm hover:bg-gray-50 text-sm">
                     Historique Sorties
                 </a>
 
-                <!-- Bouton d'ouverture de la modale des Types -->
-                <button @click="$dispatch('open-modal-add-type')" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 text-sm">
+                <!-- Bouton + Type Équipement -->
+                <button @click="$dispatch('open-modal-add-type')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm text-sm transition">
                     + Type Équipement
                 </button>
                 
-                <!-- Formulaire de recherche -->
+                <!-- Barre de recherche -->
                 <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2">
                     <div class="relative">
-                        <input type="text" name="search" placeholder="Rechercher..." value="{{ request('search') }}" class="px-4 py-2 pl-10 border rounded-lg w-48 sm:w-64 dark:bg-gray-700 dark:text-white dark:border-gray-600 text-sm">
+                        <input type="text" name="search" placeholder="Rechercher intitulé, type..." value="{{ request('search') }}" class="px-4 py-2 pl-9 border border-gray-300 rounded-lg w-56 sm:w-64 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
                         </div>
                     </div>
                 </form>
 
-                <!-- Bouton Ajouter Équipement -->
-                <button @click="isSlideOverOpen = true" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 text-sm">
+                <!-- Bouton + Nouveau -->
+                <button @click="isSlideOverOpen = true" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm text-sm transition">
                     + Nouveau
                 </button>
             </div>
         </div>
 
-        <!-- Grille des équipements -->
+        <!-- Grille des équipements (Style exact d'origine) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @forelse($equipments as $equipment)
-                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex flex-col items-center shadow-sm hover:shadow-md transition">
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between relative group hover:shadow-md transition">
                     
-                    <!-- Image liée au TYPE d'équipement -->
-                    <div class="w-full h-40 flex items-center justify-center mb-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-2">
-                        @if($equipment->equipmentType && $equipment->equipmentType->image)
-                            <img src="{{ asset('storage/' . $equipment->equipmentType->image) }}" 
-                                 alt="{{ $equipment->equipmentType->name }}" 
-                                 class="max-h-full max-w-full object-contain">
-                        @else
-                            <span class="text-gray-400 text-xs">Aucune image disponible</span>
-                        @endif
+                    <div>
+                        <!-- Menu d'actions (Trois points vertical) -->
+                        <div class="absolute top-3 right-3 z-10" x-data="{ openMenu: false }">
+                            <button @click="openMenu = !openMenu" @click.away="openMenu = false" class="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+                                </svg>
+                            </button>
+
+                            <!-- Dropdown Menu -->
+                            <div x-show="openMenu" 
+                                 x-transition 
+                                 class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1 text-xs z-20"
+                                 style="display: none;">
+                                
+                                <a href="{{ route('equipments.stockout.create', $equipment) }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    Sortie de Stock
+                                </a>
+                                
+                                <a href="{{ route('equipments.edit', $equipment) }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    Modifier
+                                </a>
+
+                                <form action="{{ route('equipments.destroy', $equipment) }}" method="POST" onsubmit="return confirm('Confirmer la suppression de cet équipement ?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-50">
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Image de l'équipement (issue du Type) -->
+                        <div class="w-full h-44 bg-gray-100 flex items-center justify-center p-4">
+                            @if($equipment->equipmentType && $equipment->equipmentType->image)
+                                <img src="{{ asset('storage/' . $equipment->equipmentType->image) }}" 
+                                     alt="{{ $equipment->name }}" 
+                                     class="max-h-full max-w-full object-contain">
+                            @else
+                                <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded text-gray-400 font-semibold text-sm">
+                                    {{ $equipment->name }}
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Contenu texte de la carte -->
+                        <div class="p-4">
+                            <h3 class="font-bold text-gray-900 text-sm mb-0.5 truncate" title="{{ $equipment->name }}">
+                                {{ $equipment->name }}
+                            </h3>
+                            <p class="text-xs text-gray-500 mb-3">
+                                {{ $equipment->equipmentType->name ?? ($equipment->category ?? 'Équipement') }}
+                            </p>
+                            
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-gray-900 text-sm">
+                                    {{ number_format($equipment->price ?? $equipment->unit_price ?? 0, 0, ',', ' ') }} FCFA
+                                </span>
+                                <span class="text-xs font-semibold {{ ($equipment->quantity ?? 0) > 0 ? 'text-red-500' : 'text-gray-400' }}">
+                                    Qté: {{ $equipment->quantity ?? 0 }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Informations Équipement -->
-                    <h3 class="font-bold text-gray-800 dark:text-white text-center text-base mb-1">{{ $equipment->name }}</h3>
-                    <span class="inline-block px-2.5 py-0.5 text-xs font-medium text-indigo-800 bg-indigo-100 rounded-full dark:bg-indigo-900 dark:text-indigo-200 mb-2">
-                        {{ $equipment->equipmentType->name ?? 'Non catégorisé' }}
-                    </span>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Réf: {{ $equipment->reference ?? 'N/A' }}</p>
                 </div>
             @empty
-                <div class="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-                    Aucun équipement enregistré pour le moment.
+                <div class="col-span-full text-center py-12 text-gray-500">
+                    Aucun équipement disponible dans le stock.
                 </div>
             @endforelse
         </div>
 
         <!-- ========================================================= -->
-        <!-- MODALE : Gestion des Types d'équipement (Ajout / Liste / Modif / Suppr) -->
+        <!-- MODALE : Gestion des Types d'équipement -->
         <!-- ========================================================= -->
         <div x-data="{ 
             open: false, 
@@ -87,25 +139,25 @@
         style="display: none;">
 
             <div class="flex items-center justify-center min-h-screen px-4">
-                <div class="fixed inset-0 bg-black/50 transition-opacity" @click="open = false"></div>
+                <div class="fixed inset-0 bg-black/40 transition-opacity" @click="open = false"></div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 z-10 shadow-2xl border border-gray-200 dark:border-gray-700">
+                <div class="bg-white rounded-xl max-w-md w-full p-6 z-10 shadow-xl border border-gray-100">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Gestion des Types d'Équipement</h2>
-                        <button @click="open = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">&times;</button>
+                        <h2 class="text-lg font-bold text-gray-900">Gestion des Types d'Équipement</h2>
+                        <button @click="open = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
                     </div>
 
                     <!-- Formulaire d'ajout de Type -->
                     <form action="{{ route('equipment-types.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                         @csrf
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nouveau type</label>
-                            <input type="text" name="name" required placeholder="Ex: Caméra, Microphone..." class="mt-1 w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 dark:bg-gray-700 dark:text-white text-sm">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Nouveau type</label>
+                            <input type="text" name="name" required placeholder="Ex: Caméra, Microphone..." class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Image associée</label>
-                            <input type="file" name="image" accept="image/*" required class="mt-1 w-full text-xs text-gray-500 border border-gray-300 dark:border-gray-600 rounded-md p-1 dark:bg-gray-700">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Image associée</label>
+                            <input type="file" name="image" accept="image/*" required class="w-full text-xs text-gray-500 border border-gray-300 rounded-md p-1">
                         </div>
 
                         <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 font-semibold text-sm transition">
@@ -113,34 +165,31 @@
                         </button>
                     </form>
 
-                    <hr class="my-6 border-gray-200 dark:border-gray-700">
+                    <hr class="my-5 border-gray-200">
 
-                    <!-- Liste déroulante des types existants -->
+                    <!-- Sélection / Modification / Suppression -->
                     <div class="space-y-3">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Consulter / Modifier un type</label>
-                        <select x-model="selectedTypeId" @change="updateSelection()" class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 dark:bg-gray-700 dark:text-white text-sm">
+                        <label class="block text-xs font-medium text-gray-700">Consulter / Modifier un type</label>
+                        <select x-model="selectedTypeId" @change="updateSelection()" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                             <option value="">-- Sélectionner un type --</option>
                             <template x-for="type in types" :key="type.id">
                                 <option :value="type.id" x-text="type.name"></option>
                             </template>
                         </select>
 
-                        <!-- Panneau de détails du type sélectionné -->
                         <template x-if="selectedType">
-                            <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 flex flex-col items-center gap-3">
-                                
-                                <img :src="'/storage/' + selectedType.image" class="w-28 h-28 object-contain rounded-md border bg-white p-1">
+                            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center gap-3">
+                                <img :src="'/storage/' + selectedType.image" class="w-24 h-24 object-contain rounded border bg-white p-1">
 
                                 <template x-if="!isEditing">
-                                    <p class="font-bold text-base text-gray-800 dark:text-white" x-text="selectedType.name"></p>
+                                    <p class="font-bold text-sm text-gray-800" x-text="selectedType.name"></p>
                                 </template>
 
-                                <!-- Formulaire d'édition du type -->
                                 <template x-if="isEditing">
                                     <form :action="'/equipment-types/' + selectedType.id" method="POST" enctype="multipart/form-data" class="w-full space-y-2">
                                         @csrf
                                         @method('PUT')
-                                        <input type="text" name="name" x-model="editName" class="w-full border rounded p-1 text-sm dark:bg-gray-800 dark:text-white">
+                                        <input type="text" name="name" x-model="editName" class="w-full border rounded p-1 text-sm">
                                         <input type="file" name="image" accept="image/*" class="w-full text-xs text-gray-500">
                                         <div class="flex justify-end gap-2 pt-1">
                                             <button type="submit" class="bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700">Valider</button>
@@ -149,10 +198,9 @@
                                     </form>
                                 </template>
 
-                                <!-- Actions : Modifier / Supprimer -->
                                 <template x-if="!isEditing">
                                     <div class="flex gap-2">
-                                        <button @click="isEditing = true" class="px-3 py-1 bg-yellow-500 text-white text-xs font-semibold rounded hover:bg-yellow-600">
+                                        <button @click="isEditing = true" class="px-3 py-1 bg-amber-500 text-white text-xs font-semibold rounded hover:bg-amber-600">
                                             Modifier
                                         </button>
 
@@ -169,55 +217,96 @@
                         </template>
                     </div>
 
-                    <div class="mt-6 text-right">
-                        <button @click="open = false" class="px-4 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-xs hover:bg-gray-300">Fermer</button>
+                    <div class="mt-5 text-right">
+                        <button @click="open = false" class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md text-xs hover:bg-gray-300">Fermer</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- ========================================================= -->
-        <!-- SLIDE-OVER : Ajouter un Équipement (Sans champ Image) -->
+        <!-- SLIDE-OVER : Ajouter un Équipement (Identique à la capture) -->
         <!-- ========================================================= -->
         <div x-show="isSlideOverOpen" class="fixed inset-0 z-50 overflow-hidden" style="display: none;">
-            <div class="absolute inset-0 bg-black/50" @click="isSlideOverOpen = false"></div>
+            <div class="absolute inset-0 bg-black/40 transition-opacity" @click="isSlideOverOpen = false"></div>
+
             <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
-                <div class="w-screen max-w-md bg-white dark:bg-gray-800 p-6 shadow-xl border-l dark:border-gray-700">
-                    <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Ajouter un Équipement</h2>
+                <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
                     
-                    <form action="{{ route('equipments.store') }}" method="POST" class="space-y-4">
-                        @csrf
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom de l'équipement</label>
-                            <input type="text" name="name" required class="mt-1 w-full border rounded-md p-2 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 text-sm">
+                    <div>
+                        <!-- En-tête bleu/violet du panneau Slide-Over -->
+                        <div class="bg-indigo-600 px-6 py-4 flex items-center justify-between">
+                            <h2 class="text-lg font-semibold text-white">Ajouter un équipement</h2>
+                            <button @click="isSlideOverOpen = false" class="text-white hover:text-gray-200">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Référence / Modèle</label>
-                            <input type="text" name="reference" class="mt-1 w-full border rounded-md p-2 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 text-sm">
-                        </div>
+                        <!-- Formulaire identique à la capture d'écran sans le champ Image -->
+                        <form id="add-equipment-form" action="{{ route('equipments.store') }}" method="POST" class="p-6 space-y-4">
+                            @csrf
+                            
+                            <!-- Type * -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Type *</label>
+                                <select name="equipment_type_id" required class="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">-- Sélectionner un type --</option>
+                                    @foreach($equipmentTypes as $type)
+                                        <option value="{{ $type->id }}">{{ $type->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Type d'Équipement</label>
-                            <select name="equipment_type_id" required class="mt-1 w-full border rounded-md p-2 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 text-sm">
-                                <option value="">-- Sélectionner un type --</option>
-                                @foreach($equipmentTypes as $type)
-                                    <option value="{{ $type->id }}">{{ $type->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                            <!-- Intitulé * -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Intitulé *</label>
+                                <input type="text" name="name" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantité en stock</label>
-                            <input type="number" name="quantity" min="1" value="1" required class="mt-1 w-full border rounded-md p-2 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 text-sm">
-                        </div>
+                            <!-- Prix (FCFA) * & Quantité * -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Prix (FCFA) *</label>
+                                    <input type="number" name="price" value="0" min="0" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Quantité *</label>
+                                    <input type="number" name="quantity" value="0" min="1" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </div>
 
-                        <div class="flex justify-end gap-3 pt-4">
-                            <button type="button" @click="isSlideOverOpen = false" class="px-4 py-2 border rounded-md text-sm text-gray-600 dark:text-gray-300">Annuler</button>
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700">Créer l'équipement</button>
-                        </div>
-                    </form>
+                            <!-- Date d'entrée -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Date d'entrée</label>
+                                <input type="date" name="entry_date" class="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-600 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <!-- Marque -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Marque</label>
+                                <input type="text" name="brand" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <!-- Caractéristiques -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Caractéristiques</label>
+                                <textarea name="description" rows="4" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Pied de page avec boutons Annuler / Ajouter -->
+                    <div class="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                        <button type="button" @click="isSlideOverOpen = false" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            Annuler
+                        </button>
+                        <button type="submit" form="add-equipment-form" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-semibold shadow-sm transition">
+                            Ajouter
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
