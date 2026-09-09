@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\EquipmentController;
+use App\Http\Controllers\EquipmentTypeController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\DashboardController;
@@ -90,7 +91,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/equipments/stockout/{equipmentOut}/return', [EquipmentController::class, 'returnStockOut'])->name('equipments.stockout.return');
     
     // Types d'équipements
-    Route::post('/equipment-types', [EquipmentController::class, 'storeType'])->name('equipment_types.store');
+    Route::post('/equipment-types', [EquipmentTypeController::class, 'store'])->name('equipment-types.store');
+    Route::put('/equipment-types/{equipmentType}', [EquipmentTypeController::class, 'update'])->name('equipment-types.update');
+    Route::delete('/equipment-types/{equipmentType}', [EquipmentTypeController::class, 'destroy'])->name('equipment-types.destroy');
 
     // Calendrier (Events)
     Route::get('/calendrier', [EventController::class, 'index'])->name('calendar.index');
