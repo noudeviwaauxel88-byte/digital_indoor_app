@@ -1,15 +1,68 @@
 <x-app-layout>
-    <div class="py-6 px-4 sm:px-6 lg:px-8" x-data="{ 
+    {{-- Styles dédiés à l'impression --}}
+    <style>
+        @media print {
+            /* Masquer éléments de navigation, boutons d'action et modales */
+            nav, header, sidebar, .no-print, [x-show="isSlideOverOpen"], [x-show="open"] {
+                display: none !important;
+            }
+
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11pt;
+                margin: 0;
+                padding: 10mm;
+            }
+
+            .print-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+            }
+
+            /* Afficher les cartes sous forme de grille propre à l'impression */
+            .print-grid {
+                display: grid !important;
+                grid-template-cols: repeat(3, minmax(0, 1fr)) !important;
+                gap: 1rem !important;
+            }
+
+            .print-card {
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            /* Masquer le menu d'actions à 3 points sur la carte lors de l'impression */
+            .print-card .absolute {
+                display: none !important;
+            }
+        }
+    </style>
+
+    <div class="py-6 px-4 sm:px-6 lg:px-8 print-container" x-data="{ 
         isSlideOverOpen: false,
         selectedEquipment: null,
         isInfoModalOpen: false
     }">
         
-        <!-- En-tête de la page -->
-        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <!-- En-tête de la page (Visible à l'écran) -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 no-print">
             <h1 class="text-2xl font-bold text-gray-800">Gestion du Stock</h1>
             
             <div class="flex flex-wrap items-center gap-3">
+                <!-- Bouton Imprimer / PDF -->
+                <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm text-sm transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    Imprimer / PDF
+                </button>
+
                 <!-- Bouton Historique Sorties -->
                 <a href="{{ route('equipments.stockout.history') }}" class="px-4 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 shadow-sm hover:bg-gray-50 text-sm">
                     Historique Sorties
@@ -39,8 +92,14 @@
             </div>
         </div>
 
+        <!-- En-tête visible uniquement sur l'impression -->
+        <div class="hidden print:block mb-6">
+            <h1 class="text-xl font-bold text-gray-900">État Général du Stock d'Équipements</h1>
+            <p class="text-xs text-gray-500">Document généré le {{ date('d/m/Y à H:i') }}</p>
+        </div>
+
         <!-- Grille des équipements -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 print-grid">
             @forelse($equipments as $equipment)
                 @php
                     $qty = $equipment->available_items_count ?? $equipment->items_count ?? $equipment->items->where('status', 'en_stock')->count();
@@ -60,11 +119,11 @@
                         'image' => $imageUrl,
                         'items' => $equipment->items
                     ]) }}; isInfoModalOpen = true" 
-                     class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between relative group hover:shadow-md transition cursor-pointer">
+                     class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between relative group hover:shadow-md transition cursor-pointer print-card">
                     
                     <div>
                         <!-- Menu d'actions (Trois points vertical) -->
-                        <div class="absolute top-3 right-3 z-10" x-data="{ openMenu: false }">
+                        <div class="absolute top-3 right-3 z-10 no-print" x-data="{ openMenu: false }">
                             <button @click.stop="openMenu = !openMenu" @click.away="openMenu = false" class="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
@@ -144,7 +203,7 @@
         <!-- ========================================================= -->
         <!-- MODALE : Détails de l'équipement (Au clic sur une carte)  -->
         <!-- ========================================================= -->
-        <div x-show="isInfoModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div x-show="isInfoModalOpen" class="fixed inset-0 z-50 overflow-y-auto no-print" style="display: none;">
             <div class="flex items-center justify-center min-h-screen px-4">
                 <div class="fixed inset-0 bg-black/40 transition-opacity" @click="isInfoModalOpen = false"></div>
 
@@ -211,7 +270,7 @@
         </div>
 
         <!-- ========================================================= -->
-        <!-- MODALE : Gestion des Types d'équipement -->
+        <!-- MODALE : Gestion des Types d'équipement                   -->
         <!-- ========================================================= -->
         <div x-data="{ 
             open: false, 
@@ -231,7 +290,7 @@
         }" 
         x-show="open" 
         @open-modal-add-type.window="open = true" 
-        class="fixed inset-0 z-50 overflow-y-auto" 
+        class="fixed inset-0 z-50 overflow-y-auto no-print" 
         style="display: none;">
 
             <div class="flex items-center justify-center min-h-screen px-4">
@@ -323,7 +382,7 @@
         <!-- ========================================================= -->
         <!-- SLIDE-OVER : Ajouter un Équipement                        -->
         <!-- ========================================================= -->
-        <div x-show="isSlideOverOpen" class="fixed inset-0 z-50 overflow-hidden" style="display: none;">
+        <div x-show="isSlideOverOpen" class="fixed inset-0 z-50 overflow-hidden no-print" style="display: none;">
             <div class="absolute inset-0 bg-black/40 transition-opacity" @click="isSlideOverOpen = false"></div>
 
             <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
