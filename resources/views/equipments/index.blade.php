@@ -2,17 +2,17 @@
     {{-- Styles dédiés à l'impression --}}
     <style>
         @media print {
-            /* Masquer éléments de navigation, boutons d'action et modales */
-            nav, header, sidebar, .no-print, [x-show="isSlideOverOpen"], [x-show="open"] {
+            /* Masquer la navigation, les boutons, le champ de recherche, la grille de cartes et les modales */
+            nav, header, sidebar, .no-print, [x-show="isSlideOverOpen"], [x-show="open"], .screen-grid {
                 display: none !important;
             }
 
             body {
                 background-color: #ffffff !important;
                 color: #000000 !important;
-                font-size: 11pt;
+                font-size: 10pt;
                 margin: 0;
-                padding: 10mm;
+                padding: 5mm;
             }
 
             .print-container {
@@ -23,23 +23,33 @@
                 width: 100% !important;
             }
 
-            /* Afficher les cartes sous forme de grille propre à l'impression */
-            .print-grid {
-                display: grid !important;
-                grid-template-cols: repeat(3, minmax(0, 1fr)) !important;
-                gap: 1rem !important;
+            /* Afficher la section d'impression sous forme de bloc */
+            .print-only-table {
+                display: block !important;
             }
 
-            .print-card {
+            /* Forcer le tableau à prendre toute la largeur */
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+
+            th, td {
                 border: 1px solid #cbd5e1 !important;
-                box-shadow: none !important;
+                padding: 6px 8px !important;
+                text-align: left;
+            }
+
+            th {
+                background-color: #f8fafc !important;
+                font-weight: bold;
+                text-transform: uppercase;
+                font-size: 8pt;
+            }
+
+            tr {
                 break-inside: avoid;
                 page-break-inside: avoid;
-            }
-
-            /* Masquer le menu d'actions à 3 points sur la carte lors de l'impression */
-            .print-card .absolute {
-                display: none !important;
             }
         }
     </style>
@@ -50,7 +60,7 @@
         isInfoModalOpen: false
     }">
         
-        <!-- En-tête de la page (Visible à l'écran) -->
+        <!-- En-tête de la page (Visible uniquement à l'écran) -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 no-print">
             <h1 class="text-2xl font-bold text-gray-800">Gestion du Stock</h1>
             
@@ -92,14 +102,74 @@
             </div>
         </div>
 
-        <!-- En-tête visible uniquement sur l'impression -->
-        <div class="hidden print:block mb-6">
-            <h1 class="text-xl font-bold text-gray-900">État Général du Stock d'Équipements</h1>
-            <p class="text-xs text-gray-500">Document généré le {{ date('d/m/Y à H:i') }}</p>
+        <!-- ========================================================= -->
+        <!-- SECTION D'IMPRESSION (Tableau visible UNIQUEMENT sur l'impression) -->
+        <!-- ========================================================= -->
+        <div class="hidden print-only-table mb-6">
+            <div class="mb-4">
+                <h1 class="text-xl font-bold text-gray-900">État Général du Stock d'Équipements</h1>
+                <p class="text-xs text-gray-500">Généré le {{ date('d/m/Y à H:i') }}</p>
+            </div>
+
+            @php
+                $totalQuantity = 0;
+                $totalStockCost = 0;
+            @endphp
+
+            <table class="w-full text-xs">
+                <thead>
+                    <tr>
+                        <th class="w-12 text-center">N°</th>
+                        <th>Équipement</th>
+                        <th>Type</th>
+                        <th>Marque</th>
+                        <th class="text-right">Prix Unitaire</th>
+                        <th class="text-center">Qté en Stock</th>
+                        <th class="text-right">Valeur Totale</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($equipments as $index => $equipment)
+                        @php
+                            $qty = $equipment->available_items_count ?? $equipment->items_count ?? $equipment->items->where('status', 'en_stock')->count();
+                            $price = $equipment->price ?? $equipment->unit_price ?? 0;
+                            $lineTotal = $price * $qty;
+                            
+                            $typeName = $equipment->equipmentType->name ?? $equipment->type ?? 'Non spécifié';
+
+                            $totalQuantity += $qty;
+                            $totalStockCost += $lineTotal;
+                        @endphp
+                        <tr>
+                            <td class="text-center font-mono">{{ $index + 1 }}</td>
+                            <td class="font-bold">{{ $equipment->title ?? $equipment->name }}</td>
+                            <td>{{ $typeName }}</td>
+                            <td>{{ $equipment->brand ?? '—' }}</td>
+                            <td class="text-right">{{ number_format($price, 0, ',', ' ') }} FCFA</td>
+                            <td class="text-center font-bold">{{ $qty }}</td>
+                            <td class="text-right font-bold">{{ number_format($lineTotal, 0, ',', ' ') }} FCFA</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-gray-500">Aucun équipement disponible dans le stock.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                <!-- Bas de feuille avec totaux global -->
+                <tfoot>
+                    <tr class="bg-gray-100 font-bold border-t-2 border-gray-400">
+                        <td colspan="5" class="text-right uppercase px-3 py-2">Totaux Généraux :</td>
+                        <td class="text-center px-3 py-2 font-black text-sm">{{ $totalQuantity }}</td>
+                        <td class="text-right px-3 py-2 font-black text-sm text-indigo-900">{{ number_format($totalStockCost, 0, ',', ' ') }} FCFA</td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
 
-        <!-- Grille des équipements -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 print-grid">
+        <!-- ========================================================= -->
+        <!-- GRILLE DE CARTES (Visible uniquement à l'écran)            -->
+        <!-- ========================================================= -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 screen-grid">
             @forelse($equipments as $equipment)
                 @php
                     $qty = $equipment->available_items_count ?? $equipment->items_count ?? $equipment->items->where('status', 'en_stock')->count();
@@ -119,7 +189,7 @@
                         'image' => $imageUrl,
                         'items' => $equipment->items
                     ]) }}; isInfoModalOpen = true" 
-                     class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between relative group hover:shadow-md transition cursor-pointer print-card">
+                     class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between relative group hover:shadow-md transition cursor-pointer">
                     
                     <div>
                         <!-- Menu d'actions (Trois points vertical) -->
@@ -154,7 +224,7 @@
                             </div>
                         </div>
 
-                        <!-- Image de l'équipement (issue du Type) -->
+                        <!-- Image de l'équipement -->
                         <div class="w-full h-44 bg-gray-100 flex items-center justify-center p-4">
                             @if($imageUrl)
                                 <img src="{{ $imageUrl }}" 
@@ -169,12 +239,10 @@
 
                         <!-- Contenu texte de la carte -->
                         <div class="p-4">
-                            <!-- Intitulé affiché -->
                             <h3 class="font-bold text-gray-900 text-sm mb-0.5 truncate" title="{{ $equipment->title ?? $equipment->name }}">
                                 {{ $equipment->title ?? $equipment->name }}
                             </h3>
 
-                            <!-- Type d'équipement affiché -->
                             <p class="text-xs text-gray-500 mb-3">
                                 Type: <span class="font-semibold text-gray-700">{{ $typeName }}</span>
                             </p>
@@ -184,7 +252,6 @@
                                     {{ number_format($equipment->price ?? $equipment->unit_price ?? 0, 0, ',', ' ') }} FCFA
                                 </span>
 
-                                <!-- Quantité en rouge si <= 3 -->
                                 <span class="text-xs font-semibold {{ $qty <= 3 ? 'text-red-600 font-bold' : 'text-gray-600' }}">
                                     Qté: {{ $qty }}
                                 </span>
@@ -201,7 +268,7 @@
         </div>
 
         <!-- ========================================================= -->
-        <!-- MODALE : Détails de l'équipement (Au clic sur une carte)  -->
+        <!-- MODALE : Détails de l'équipement                           -->
         <!-- ========================================================= -->
         <div x-show="isInfoModalOpen" class="fixed inset-0 z-50 overflow-y-auto no-print" style="display: none;">
             <div class="flex items-center justify-center min-h-screen px-4">
@@ -302,7 +369,6 @@
                         <button @click="open = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
                     </div>
 
-                    <!-- Formulaire d'ajout de Type -->
                     <form action="{{ route('equipment-types.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                         @csrf
                         <div>
@@ -322,7 +388,6 @@
 
                     <hr class="my-5 border-gray-200">
 
-                    <!-- Sélection / Modification / Suppression -->
                     <div class="space-y-3">
                         <label class="block text-xs font-medium text-gray-700">Consulter / Modifier un type</label>
                         <select x-model="selectedTypeId" @change="updateSelection()" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -398,7 +463,6 @@
                 }">
                     
                     <div>
-                        <!-- En-tête bleu/violet du panneau Slide-Over -->
                         <div class="bg-indigo-600 px-6 py-4 flex items-center justify-between">
                             <h2 class="text-lg font-semibold text-white">Ajouter un équipement</h2>
                             <button @click="isSlideOverOpen = false" class="text-white hover:text-gray-200">
@@ -408,11 +472,9 @@
                             </button>
                         </div>
 
-                        <!-- Formulaire -->
                         <form id="add-equipment-form" action="{{ route('equipments.store') }}" method="POST" class="p-6 space-y-4 max-h-[calc(100vh-130px)] overflow-y-auto">
                             @csrf
                             
-                            <!-- Type * -->
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Type *</label>
                                 <select name="equipment_type_id" required class="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -423,13 +485,11 @@
                                 </select>
                             </div>
 
-                            <!-- Intitulé * -->
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Intitulé *</label>
                                 <input type="text" name="title" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
 
-                            <!-- Prix (FCFA) * & Quantité * -->
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-semibold text-gray-700 mb-1">Prix (FCFA) *</label>
@@ -441,7 +501,6 @@
                                 </div>
                             </div>
 
-                            <!-- Champs dynamiques des Numéros de série -->
                             <div class="space-y-2 border-t pt-3">
                                 <label class="block text-xs font-semibold text-gray-700">Numéro(s) de série *</label>
                                 <template x-for="(serial, index) in serials" :key="index">
@@ -452,19 +511,16 @@
                                 </template>
                             </div>
 
-                            <!-- Date d'entrée -->
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Date d'entrée</label>
                                 <input type="date" name="entry_date" class="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-600 focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
 
-                            <!-- Marque -->
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Marque</label>
                                 <input type="text" name="brand" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
 
-                            <!-- Caractéristiques / Description -->
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Caractéristiques</label>
                                 <textarea name="features" rows="3" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
@@ -472,7 +528,6 @@
                         </form>
                     </div>
 
-                    <!-- Pied de page avec boutons Annuler / Ajouter -->
                     <div class="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
                         <button type="button" @click="isSlideOverOpen = false" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                             Annuler
