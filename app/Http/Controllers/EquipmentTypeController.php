@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EquipmentType;
 use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Exception;
 
 class EquipmentTypeController extends Controller
 {
@@ -18,17 +19,29 @@ class EquipmentTypeController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
-        // Envoi de l'image sur Cloudinary
-        $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath(), [
-            'folder' => 'equipment_types'
-        ])->getSecurePath();
+        try {
+            // Passez directement l'objet UploadedFile ($request->file('image')) à Cloudinary
+            $upload = Cloudinary::uploadApi()->upload(
+                $request->file('image')->getRealPath(),
+                ['folder' => 'equipment_types']
+            );
 
-        EquipmentType::create([
-            'name'  => $request->name,
-            'image' => $uploadedFileUrl,
-        ]);
+            $uploadedFileUrl = $upload['secure_url'] ?? null;
 
-        return redirect()->back()->with('success', 'Type d\'équipement ajouté avec succès.');
+            if (!$uploadedFileUrl) {
+                return redirect()->back()->with('error', 'Échec de l\'envoi de l\'image sur Cloudinary.');
+            }
+
+            EquipmentType::create([
+                'name'  => $request->name,
+                'image' => $uploadedFileUrl,
+            ]);
+
+            return redirect()->back()->with('success', 'Type d\'équipement ajouté avec succès.');
+
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Erreur lors de l\'upload de l\'image : ' . $e->getMessage());
+        }
     }
 
     /**
@@ -44,11 +57,18 @@ class EquipmentTypeController extends Controller
         $data = ['name' => $request->name];
 
         if ($request->hasFile('image')) {
-            $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath(), [
-                'folder' => 'equipment_types'
-            ])->getSecurePath();
+            try {
+                $upload = Cloudinary::uploadApi()->upload(
+                    $request->file('image')->getRealPath(),
+                    ['folder' => 'equipment_types']
+                );
 
-            $data['image'] = $uploadedFileUrl;
+                if (isset($upload['secure_url'])) {
+                    $data['image'] = $upload['secure_url'];
+                }
+            } catch (Exception $e) {
+                return redirect()->back()->with('error', 'Erreur lors de l\'upload de la nouvelle image : ' . $e->getMessage());
+            }
         }
 
         $equipmentType->update($data);
@@ -61,7 +81,6 @@ class EquipmentTypeController extends Controller
      */
     public function destroy(EquipmentType $equipmentType)
     {
-        // Sécurité : On empêche la suppression si des équipements utilisent ce type
         if ($equipmentType->equipments()->count() > 0) {
             return redirect()->back()->with('error', 'Impossible : des équipements utilisent déjà ce type.');
         }
