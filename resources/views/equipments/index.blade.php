@@ -350,7 +350,7 @@
         <!-- MODALE : Gestion des Types d'équipement                   -->
         <!-- ========================================================= -->
         <div x-data="{ 
-            open: false, 
+            open: {{ $errors->any() ? 'true' : 'false' }}, 
             selectedTypeId: '', 
             types: {{ json_encode($equipmentTypes) }},
             selectedType: null,
@@ -379,11 +379,23 @@
                         <button @click="open = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
                     </div>
 
+                    <!-- BLOC D'AFFICHAGE DES ERREURS DE VALIDATION -->
+                    @if ($errors->any())
+                        <div class="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded text-red-700 text-xs">
+                            <p class="font-bold mb-1">Erreur(s) lors de l'enregistrement :</p>
+                            <ul class="list-disc pl-4 space-y-0.5">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <form action="{{ route('equipment-types.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                         @csrf
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">Nouveau type</label>
-                            <input type="text" name="name" required placeholder="Ex: Caméra, Microphone..." class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            <input type="text" name="name" value="{{ old('name') }}" required placeholder="Ex: Caméra, Microphone..." class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
 
                         <div>
