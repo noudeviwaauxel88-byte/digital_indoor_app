@@ -175,7 +175,17 @@
                     $qty = $equipment->available_items_count ?? $equipment->items_count ?? $equipment->items->where('status', 'en_stock')->count();
                     $typeObj = $equipment->equipmentType;
                     $typeName = $typeObj->name ?? $equipment->type ?? 'Non spécifié';
-                    $imageUrl = $typeObj && $typeObj->image ? asset('storage/' . $typeObj->image) : ($equipment->image_path ? asset('storage/' . $equipment->image_path) : null);
+
+                    // Détection intelligente de l'URL Cloudinary vs Locale
+                    $rawImage = $typeObj->image ?? $equipment->image_path ?? null;
+
+                    if ($rawImage) {
+                        $imageUrl = str_starts_with($rawImage, 'http') 
+                            ? $rawImage 
+                            : asset('storage/' . $rawImage);
+                    } else {
+                        $imageUrl = null;
+                    }
                 @endphp
 
                 <div @click="selectedEquipment = {{ json_encode([
@@ -399,7 +409,8 @@
 
                         <template x-if="selectedType">
                             <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center gap-3">
-                                <img :src="'/storage/' + selectedType.image" class="w-24 h-24 object-contain rounded border bg-white p-1">
+                                <!-- Affichage conditionnel de l'image (Cloudinary vs Local) -->
+                                <img :src="selectedType.image && selectedType.image.startsWith('http') ? selectedType.image : '/storage/' + selectedType.image" class="w-24 h-24 object-contain rounded border bg-white p-1">
 
                                 <template x-if="!isEditing">
                                     <p class="font-bold text-sm text-gray-800" x-text="selectedType.name"></p>

@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\EquipmentType;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class EquipmentTypeController extends Controller
 {
     /**
-     * Enregistrer un nouveau type.
+     * Enregistrer un nouveau type sur Cloudinary.
      */
     public function store(Request $request)
     {
@@ -18,18 +18,21 @@ class EquipmentTypeController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
-        $imagePath = $request->file('image')->store('equipment_types', 'public');
+        // Envoi de l'image sur Cloudinary
+        $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath(), [
+            'folder' => 'equipment_types'
+        ])->getSecurePath();
 
         EquipmentType::create([
             'name'  => $request->name,
-            'image' => $imagePath,
+            'image' => $uploadedFileUrl,
         ]);
 
         return redirect()->back()->with('success', 'Type d\'équipement ajouté avec succès.');
     }
 
     /**
-     * Mettre à jour un type existant (nom et/ou image).
+     * Mettre à jour un type existant (nom et/ou image sur Cloudinary).
      */
     public function update(Request $request, EquipmentType $equipmentType)
     {
@@ -41,11 +44,11 @@ class EquipmentTypeController extends Controller
         $data = ['name' => $request->name];
 
         if ($request->hasFile('image')) {
-            // Supprimer l'ancienne image si elle existe
-            if ($equipmentType->image) {
-                Storage::disk('public')->delete($equipmentType->image);
-            }
-            $data['image'] = $request->file('image')->store('equipment_types', 'public');
+            $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath(), [
+                'folder' => 'equipment_types'
+            ])->getSecurePath();
+
+            $data['image'] = $uploadedFileUrl;
         }
 
         $equipmentType->update($data);
@@ -61,10 +64,6 @@ class EquipmentTypeController extends Controller
         // Sécurité : On empêche la suppression si des équipements utilisent ce type
         if ($equipmentType->equipments()->count() > 0) {
             return redirect()->back()->with('error', 'Impossible : des équipements utilisent déjà ce type.');
-        }
-
-        if ($equipmentType->image) {
-            Storage::disk('public')->delete($equipmentType->image);
         }
 
         $equipmentType->delete();
