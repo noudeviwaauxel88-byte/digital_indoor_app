@@ -2,7 +2,6 @@
     {{-- Styles dédiés à l'impression --}}
     <style>
         @media print {
-            /* Masquer la navigation, les boutons, le champ de recherche, la grille de cartes et les modales */
             nav, header, sidebar, .no-print, [x-show="isSlideOverOpen"], [x-show="open"], .screen-grid {
                 display: none !important;
             }
@@ -23,12 +22,10 @@
                 width: 100% !important;
             }
 
-            /* Afficher la section d'impression sous forme de bloc */
             .print-only-table {
                 display: block !important;
             }
 
-            /* Forcer le tableau à prendre toute la largeur */
             table {
                 width: 100% !important;
                 border-collapse: collapse !important;
@@ -77,11 +74,6 @@
                 <a href="{{ route('equipments.stockout.history') }}" class="px-4 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 shadow-sm hover:bg-gray-50 text-sm">
                     Historique Sorties
                 </a>
-
-                <!-- Bouton + Type Équipement -->
-                <button @click="$dispatch('open-modal-add-type')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm text-sm transition">
-                    + Type Équipement
-                </button>
                 
                 <!-- Barre de recherche -->
                 <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2">
@@ -102,9 +94,7 @@
             </div>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- SECTION D'IMPRESSION (Tableau visible UNIQUEMENT sur l'impression) -->
-        <!-- ========================================================= -->
+        <!-- SECTION D'IMPRESSION -->
         <div class="hidden print-only-table mb-6">
             <div class="mb-4">
                 <h1 class="text-xl font-bold text-gray-900">État Général du Stock d'Équipements</h1>
@@ -134,7 +124,6 @@
                             $qty = $equipment->available_items_count ?? $equipment->items_count ?? $equipment->items->where('status', 'en_stock')->count();
                             $price = $equipment->price ?? $equipment->unit_price ?? 0;
                             $lineTotal = $price * $qty;
-                            
                             $typeName = $equipment->equipmentType->name ?? $equipment->type ?? 'Non spécifié';
 
                             $totalQuantity += $qty;
@@ -155,7 +144,6 @@
                         </tr>
                     @endforelse
                 </tbody>
-                <!-- Bas de feuille avec totaux global -->
                 <tfoot>
                     <tr class="bg-gray-100 font-bold border-t-2 border-gray-400">
                         <td colspan="5" class="text-right uppercase px-3 py-2">Totaux Généraux :</td>
@@ -166,27 +154,20 @@
             </table>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- GRILLE DE CARTES (Visible uniquement à l'écran)            -->
-        <!-- ========================================================= -->
+        <!-- GRILLE DE CARTES (Écran) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 screen-grid">
             @forelse($equipments as $equipment)
                 @php
                     $qty = $equipment->available_items_count ?? $equipment->items_count ?? $equipment->items->where('status', 'en_stock')->count();
                     $typeObj = $equipment->equipmentType;
-                    $typeName = $typeObj->name ?? $equipment->type ?? 'Non spécifié';
+                    $typeName = $typeObj->name ?? $equipment->type ?? 'Autre';
 
-                    // 1. Récupération de l'image de la BDD
-                    $rawImage = $typeObj->image ?? $equipment->image_path ?? null;
-
-                    // 2. Normalisation du nom de fichier pour le stockage local (ex: "Point d'accès" -> "point-acces.png")
+                    // Récupération automatique du fichier PNG depuis public/images/equipment-types/
                     $slugName = \Illuminate\Support\Str::slug($typeName); 
                     $localImagePath = public_path("images/equipment-types/{$slugName}.png");
 
-                    if ($rawImage) {
-                        $imageUrl = str_starts_with($rawImage, 'http') 
-                            ? $rawImage 
-                            : asset('storage/' . $rawImage);
+                    if (!empty($typeObj->image) && str_starts_with($typeObj->image, 'http')) {
+                        $imageUrl = $typeObj->image;
                     } elseif (file_exists($localImagePath)) {
                         $imageUrl = asset("images/equipment-types/{$slugName}.png");
                     } else {
@@ -208,7 +189,7 @@
                      class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between relative group hover:shadow-md transition cursor-pointer">
                     
                     <div>
-                        <!-- Menu d'actions (Trois points vertical) -->
+                        <!-- Menu Actions -->
                         <div class="absolute top-3 right-3 z-10 no-print" x-data="{ openMenu: false }">
                             <button @click.stop="openMenu = !openMenu" @click.away="openMenu = false" class="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -216,66 +197,43 @@
                                 </svg>
                             </button>
 
-                            <!-- Dropdown Menu -->
-                            <div x-show="openMenu" 
-                                 x-transition 
-                                 class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1 text-xs z-20"
-                                 style="display: none;">
-                                
-                                <a href="{{ route('equipments.stockout.create', $equipment) }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50" @click.stop>
-                                    Sortie de Stock
-                                </a>
-                                
-                                <a href="{{ route('equipments.edit', $equipment) }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50" @click.stop>
-                                    Modifier
-                                </a>
-
-                                <form action="{{ route('equipments.destroy', $equipment) }}" method="POST" onsubmit="return confirm('Confirmer la suppression de cet équipement ?')" @click.stop>
+                            <div x-show="openMenu" x-transition class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1 text-xs z-20" style="display: none;">
+                                <a href="{{ route('equipments.stockout.create', $equipment) }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50" @click.stop>Sortie de Stock</a>
+                                <a href="{{ route('equipments.edit', $equipment) }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50" @click.stop>Modifier</a>
+                                <form action="{{ route('equipments.destroy', $equipment) }}" method="POST" onsubmit="return confirm('Confirmer la suppression ?')" @click.stop>
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-50">
-                                        Supprimer
-                                    </button>
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-50">Supprimer</button>
                                 </form>
                             </div>
                         </div>
 
                         <!-- Image de l'équipement -->
-                        <div class="w-full h-44 bg-gray-100 flex items-center justify-center p-4">
-                            @if($imageUrl)
-                                <img src="{{ $imageUrl }}" 
-                                     alt="{{ $equipment->title ?? $equipment->name }}" 
-                                     class="max-h-full max-w-full object-contain"
-                                     onerror="this.src='/images/equipment-types/autre.png';">
-                            @else
-                                <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded text-gray-400 font-semibold text-sm">
-                                    {{ $equipment->title ?? $equipment->name }}
-                                </div>
-                            @endif
+                        <div class="w-full h-44 bg-gray-50 flex items-center justify-center p-4">
+                            <img src="{{ $imageUrl }}" 
+                                 alt="{{ $equipment->title ?? $equipment->name }}" 
+                                 class="max-h-full max-w-full object-contain"
+                                 onerror="this.src='/images/equipment-types/autre.png';">
                         </div>
 
-                        <!-- Contenu texte de la carte -->
+                        <!-- Info carte -->
                         <div class="p-4">
                             <h3 class="font-bold text-gray-900 text-sm mb-0.5 truncate" title="{{ $equipment->title ?? $equipment->name }}">
                                 {{ $equipment->title ?? $equipment->name }}
                             </h3>
-
                             <p class="text-xs text-gray-500 mb-3">
                                 Type: <span class="font-semibold text-gray-700">{{ $typeName }}</span>
                             </p>
-                            
                             <div class="flex justify-between items-center text-xs">
                                 <span class="font-bold text-gray-900 text-sm">
                                     {{ number_format($equipment->price ?? $equipment->unit_price ?? 0, 0, ',', ' ') }} FCFA
                                 </span>
-
                                 <span class="text-xs font-semibold {{ $qty <= 3 ? 'text-red-600 font-bold' : 'text-gray-600' }}">
                                     Qté: {{ $qty }}
                                 </span>
                             </div>
                         </div>
                     </div>
-
                 </div>
             @empty
                 <div class="col-span-full text-center py-12 text-gray-500">
@@ -284,9 +242,7 @@
             @endforelse
         </div>
 
-        <!-- ========================================================= -->
-        <!-- MODALE : Détails de l'équipement                           -->
-        <!-- ========================================================= -->
+        <!-- MODALE DETAILS -->
         <div x-show="isInfoModalOpen" class="fixed inset-0 z-50 overflow-y-auto no-print" style="display: none;">
             <div class="flex items-center justify-center min-h-screen px-4">
                 <div class="fixed inset-0 bg-black/40 transition-opacity" @click="isInfoModalOpen = false"></div>
@@ -298,12 +254,7 @@
                         <div>
                             <div class="flex items-center gap-4 mb-4 pb-4 border-b">
                                 <div class="w-20 h-20 bg-gray-50 rounded-lg p-2 flex items-center justify-center border">
-                                    <template x-if="selectedEquipment.image">
-                                        <img :src="selectedEquipment.image" class="max-h-full max-w-full object-contain" onerror="this.src='/images/equipment-types/autre.png';">
-                                    </template>
-                                    <template x-if="!selectedEquipment.image">
-                                        <span class="text-xs text-gray-400 text-center">Pas d'image</span>
-                                    </template>
+                                    <img :src="selectedEquipment.image" class="max-h-full max-w-full object-contain" onerror="this.src='/images/equipment-types/autre.png';">
                                 </div>
                                 <div>
                                     <h2 class="text-lg font-bold text-gray-900" x-text="selectedEquipment.title"></h2>
@@ -353,144 +304,7 @@
             </div>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- MODALE : Gestion des Types d'équipement                   -->
-        <!-- ========================================================= -->
-        <div x-data="{ 
-            open: {{ $errors->any() ? 'true' : 'false' }}, 
-            selectedTypeId: '', 
-            types: {{ json_encode($equipmentTypes) }},
-            selectedType: null,
-            isEditing: false,
-            editName: '',
-            
-            updateSelection() {
-                this.selectedType = this.types.find(t => t.id == this.selectedTypeId) || null;
-                if(this.selectedType) {
-                    this.editName = this.selectedType.name;
-                }
-                this.isEditing = false;
-            },
-
-            getTypeImageUrl(type) {
-                if (!type) return '/images/equipment-types/autre.png';
-                if (type.image && type.image.startsWith('http')) return type.image;
-                if (type.image) return '/storage/' + type.image;
-                
-                let slug = type.name.toLowerCase()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/(^-|-$)+/g, '');
-                return '/images/equipment-types/' + slug + '.png';
-            }
-        }" 
-        x-show="open" 
-        @open-modal-add-type.window="open = true" 
-        class="fixed inset-0 z-50 overflow-y-auto no-print" 
-        style="display: none;">
-
-            <div class="flex items-center justify-center min-h-screen px-4">
-                <div class="fixed inset-0 bg-black/40 transition-opacity" @click="open = false"></div>
-
-                <div class="bg-white rounded-xl max-w-md w-full p-6 z-10 shadow-xl border border-gray-100">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-gray-900">Gestion des Types d'Équipement</h2>
-                        <button @click="open = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
-                    </div>
-
-                    <!-- BLOC D'AFFICHAGE DES ERREURS DE VALIDATION -->
-                    @if ($errors->any())
-                        <div class="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded text-red-700 text-xs">
-                            <p class="font-bold mb-1">Erreur(s) lors de l'enregistrement :</p>
-                            <ul class="list-disc pl-4 space-y-0.5">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-
-                    <form action="{{ route('equipment-types.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-                        @csrf
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Nouveau type</label>
-                            <input type="text" name="name" value="{{ old('name') }}" required placeholder="Ex: Caméra, Microphone..." class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Image associée (Optionnelle)</label>
-                            <input type="file" name="image" accept="image/*" class="w-full text-xs text-gray-500 border border-gray-300 rounded-md p-1">
-                        </div>
-
-                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 font-semibold text-sm transition">
-                            Enregistrer le type
-                        </button>
-                    </form>
-
-                    <hr class="my-5 border-gray-200">
-
-                    <div class="space-y-3">
-                        <label class="block text-xs font-medium text-gray-700">Consulter / Modifier un type</label>
-                        <select x-model="selectedTypeId" @change="updateSelection()" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">-- Sélectionner un type --</option>
-                            <template x-for="type in types" :key="type.id">
-                                <option :value="type.id" x-text="type.name"></option>
-                            </template>
-                        </select>
-
-                        <template x-if="selectedType">
-                            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center gap-3">
-                                <!-- Affichage conditionnel de l'image (Cloudinary, Local ou fallback PNG) -->
-                                <img :src="getTypeImageUrl(selectedType)" 
-                                     class="w-24 h-24 object-contain rounded border bg-white p-1"
-                                     onerror="this.src='/images/equipment-types/autre.png';">
-
-                                <template x-if="!isEditing">
-                                    <p class="font-bold text-sm text-gray-800" x-text="selectedType.name"></p>
-                                </template>
-
-                                <template x-if="isEditing">
-                                    <form :action="'/equipment-types/' + selectedType.id" method="POST" enctype="multipart/form-data" class="w-full space-y-2">
-                                        @csrf
-                                        @method('PUT')
-                                        <input type="text" name="name" x-model="editName" class="w-full border rounded p-1 text-sm">
-                                        <input type="file" name="image" accept="image/*" class="w-full text-xs text-gray-500">
-                                        <div class="flex justify-end gap-2 pt-1">
-                                            <button type="submit" class="bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700">Valider</button>
-                                            <button type="button" @click="isEditing = false" class="bg-gray-400 text-white text-xs px-3 py-1 rounded hover:bg-gray-500">Annuler</button>
-                                        </div>
-                                    </form>
-                                </template>
-
-                                <template x-if="!isEditing">
-                                    <div class="flex gap-2">
-                                        <button @click="isEditing = true" class="px-3 py-1 bg-amber-500 text-white text-xs font-semibold rounded hover:bg-amber-600">
-                                            Modifier
-                                        </button>
-
-                                        <form :action="'/equipment-types/' + selectedType.id" method="POST" onsubmit="return confirm('Voulez-vous vraiment supprimer ce type ?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700">
-                                                Supprimer
-                                            </button>
-                                        </form>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div class="mt-5 text-right">
-                        <button @click="open = false" class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md text-xs hover:bg-gray-300">Fermer</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================================= -->
-        <!-- SLIDE-OVER : Ajouter un Équipement                        -->
-        <!-- ========================================================= -->
+        <!-- SLIDE-OVER : Ajouter un Équipement -->
         <div x-show="isSlideOverOpen" class="fixed inset-0 z-50 overflow-hidden no-print" style="display: none;">
             <div class="absolute inset-0 bg-black/40 transition-opacity" @click="isSlideOverOpen = false"></div>
 
@@ -498,6 +312,23 @@
                 <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between" x-data="{ 
                     quantity: 1, 
                     serials: [''],
+                    selectedTypeSlug: '',
+                    typesMap: {{ json_encode($equipmentTypes->pluck('name', 'id')) }},
+                    
+                    updatePreview(event) {
+                        let selectedId = event.target.value;
+                        let typeName = this.typesMap[selectedId] || '';
+                        if (typeName) {
+                            // Génère le slug Alpine JS pour aperçu immédiat
+                            this.selectedTypeSlug = typeName.toLowerCase()
+                                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                                .replace(/[^a-z0-9]+/g, '-')
+                                .replace(/(^-|-$)+/g, '');
+                        } else {
+                            this.selectedTypeSlug = '';
+                        }
+                    },
+                    
                     updateSerials() {
                         let q = parseInt(this.quantity) || 0;
                         if (q < 1) q = 1;
@@ -519,14 +350,25 @@
                         <form id="add-equipment-form" action="{{ route('equipments.store') }}" method="POST" class="p-6 space-y-4 max-h-[calc(100vh-130px)] overflow-y-auto">
                             @csrf
                             
+                            <!-- Champ Type avec Aperçu dynamique de l'image -->
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Type *</label>
-                                <select name="equipment_type_id" required class="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <select name="equipment_type_id" @change="updatePreview($event)" required class="w-full border border-gray-300 rounded-md p-2.5 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                                     <option value="">-- Sélectionner un type --</option>
                                     @foreach($equipmentTypes as $type)
                                         <option value="{{ $type->id }}">{{ $type->name }}</option>
                                     @endforeach
                                 </select>
+
+                                <!-- Aperçu dynamique du fichier local -->
+                                <template x-if="selectedTypeSlug">
+                                    <div class="mt-2 p-2 border rounded-lg bg-gray-50 flex items-center gap-3">
+                                        <img :src="'/images/equipment-types/' + selectedTypeSlug + '.png'" 
+                                             class="w-12 h-12 object-contain"
+                                             onerror="this.src='/images/equipment-types/autre.png';">
+                                        <span class="text-xs text-gray-500">Image associée détectée</span>
+                                    </div>
+                                </template>
                             </div>
 
                             <div>
