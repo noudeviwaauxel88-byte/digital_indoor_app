@@ -51,6 +51,28 @@
         }
     </style>
 
+    {{-- Helper PHP local pour générer des slugs uniformes sans dépendance externe --}}
+    @php
+        if (!function_exists('getEquipmentTypeSlug')) {
+            function getEquipmentTypeSlug($name) {
+                $slug = mb_strtolower($name, 'UTF-8');
+                $utf8 = [
+                    '/[áàâãäå]/u'   => 'a',
+                    '/[éèêë]/u'     => 'e',
+                    '/[íìîï]/u'     => 'i',
+                    '/[óòôõö]/u'    => 'o',
+                    '/[úùûü]/u'     => 'u',
+                    '/[ç]/u'        => 'c',
+                    '/[’\']/u'      => '-',
+                    '/[^a-z0-9]/u'  => '-'
+                ];
+                $slug = preg_replace(array_keys($utf8), array_values($utf8), $slug);
+                $slug = preg_replace('/-+/', '-', $slug);
+                return trim($slug, '-');
+            }
+        }
+    @endphp
+
     <div class="py-6 px-4 sm:px-6 lg:px-8 print-container" x-data="{ 
         isSlideOverOpen: false,
         selectedEquipment: null,
@@ -162,17 +184,8 @@
                     $typeObj = $equipment->equipmentType;
                     $typeName = $typeObj->name ?? $equipment->type ?? 'Autre';
 
-                    // Récupération automatique du fichier PNG depuis public/images/equipment-types/
-                    $slugName = \Illuminate\Support\Str::slug($typeName); 
-                    $localImagePath = public_path("images/equipment-types/{$slugName}.png");
-
-                    if (!empty($typeObj->image) && str_starts_with($typeObj->image, 'http')) {
-                        $imageUrl = $typeObj->image;
-                    } elseif (file_exists($localImagePath)) {
-                        $imageUrl = asset("images/equipment-types/{$slugName}.png");
-                    } else {
-                        $imageUrl = asset("images/equipment-types/autre.png");
-                    }
+                    $slugName = getEquipmentTypeSlug($typeName);
+                    $imageUrl = asset("images/equipment-types/{$slugName}.png");
                 @endphp
 
                 <div @click="selectedEquipment = {{ json_encode([
@@ -208,12 +221,19 @@
                             </div>
                         </div>
 
-                        <!-- Image de l'équipement -->
-                        <div class="w-full h-44 bg-gray-50 flex items-center justify-center p-4">
+                        <!-- Image de l'équipement sécurisée contre la boucle de chargement -->
+                        <div class="w-full h-44 bg-gray-50 flex items-center justify-center p-4 relative">
                             <img src="{{ $imageUrl }}" 
                                  alt="{{ $equipment->title ?? $equipment->name }}" 
                                  class="max-h-full max-w-full object-contain"
-                                 onerror="this.src='/images/equipment-types/autre.png';">
+                                 onerror="if(!this.dataset.fallback){ this.dataset.fallback=true; this.src='/images/equipment-types/autre.png'; } else { this.style.display='none'; this.nextElementSibling.style.display='flex'; }">
+                            
+                            <!-- Placeholder SVG si aucune image n'est trouvée -->
+                            <div class="hidden flex-col items-center justify-center text-gray-300">
+                                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                            </div>
                         </div>
 
                         <!-- Info carte -->
@@ -254,7 +274,9 @@
                         <div>
                             <div class="flex items-center gap-4 mb-4 pb-4 border-b">
                                 <div class="w-20 h-20 bg-gray-50 rounded-lg p-2 flex items-center justify-center border">
-                                    <img :src="selectedEquipment.image" class="max-h-full max-w-full object-contain" onerror="this.src='/images/equipment-types/autre.png';">
+                                    <img :src="selectedEquipment.image" 
+                                         class="max-h-full max-w-full object-contain" 
+                                         onerror="if(!this.dataset.fallback){ this.dataset.fallback=true; this.src='/images/equipment-types/autre.png'; }">
                                 </div>
                                 <div>
                                     <h2 class="text-lg font-bold text-gray-900" x-text="selectedEquipment.title"></h2>
@@ -315,15 +337,20 @@
                     selectedTypeSlug: '',
                     typesMap: {{ json_encode($equipmentTypes->pluck('name', 'id')) }},
                     
+                    slugify(str) {
+                        return str.toString().toLowerCase()
+                            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                            .replace(/['’]/g, '-')
+                            .replace(/[^a-z0-9]/g, '-')
+                            .replace(/-+/g, '-')
+                            .replace(/^-|-$/g, '');
+                    },
+
                     updatePreview(event) {
                         let selectedId = event.target.value;
                         let typeName = this.typesMap[selectedId] || '';
                         if (typeName) {
-                            // Génère le slug Alpine JS pour aperçu immédiat
-                            this.selectedTypeSlug = typeName.toLowerCase()
-                                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                                .replace(/[^a-z0-9]+/g, '-')
-                                .replace(/(^-|-$)+/g, '');
+                            this.selectedTypeSlug = this.slugify(typeName);
                         } else {
                             this.selectedTypeSlug = '';
                         }
@@ -365,7 +392,7 @@
                                     <div class="mt-2 p-2 border rounded-lg bg-gray-50 flex items-center gap-3">
                                         <img :src="'/images/equipment-types/' + selectedTypeSlug + '.png'" 
                                              class="w-12 h-12 object-contain"
-                                             onerror="this.src='/images/equipment-types/autre.png';">
+                                             onerror="if(!this.dataset.fallback){ this.dataset.fallback=true; this.src='/images/equipment-types/autre.png'; }">
                                         <span class="text-xs text-gray-500">Image associée détectée</span>
                                     </div>
                                 </template>
