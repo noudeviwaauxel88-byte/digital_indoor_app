@@ -176,15 +176,21 @@
                     $typeObj = $equipment->equipmentType;
                     $typeName = $typeObj->name ?? $equipment->type ?? 'Non spécifié';
 
-                    // Détection intelligente de l'URL Cloudinary vs Locale
+                    // 1. Récupération de l'image de la BDD
                     $rawImage = $typeObj->image ?? $equipment->image_path ?? null;
+
+                    // 2. Normalisation du nom de fichier pour le stockage local (ex: "Point d'accès" -> "point-acces.png")
+                    $slugName = \Illuminate\Support\Str::slug($typeName); 
+                    $localImagePath = public_path("images/equipment-types/{$slugName}.png");
 
                     if ($rawImage) {
                         $imageUrl = str_starts_with($rawImage, 'http') 
                             ? $rawImage 
                             : asset('storage/' . $rawImage);
+                    } elseif (file_exists($localImagePath)) {
+                        $imageUrl = asset("images/equipment-types/{$slugName}.png");
                     } else {
-                        $imageUrl = null;
+                        $imageUrl = asset("images/equipment-types/autre.png");
                     }
                 @endphp
 
@@ -239,7 +245,8 @@
                             @if($imageUrl)
                                 <img src="{{ $imageUrl }}" 
                                      alt="{{ $equipment->title ?? $equipment->name }}" 
-                                     class="max-h-full max-w-full object-contain">
+                                     class="max-h-full max-w-full object-contain"
+                                     onerror="this.src='/images/equipment-types/autre.png';">
                             @else
                                 <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded text-gray-400 font-semibold text-sm">
                                     {{ $equipment->title ?? $equipment->name }}
@@ -292,7 +299,7 @@
                             <div class="flex items-center gap-4 mb-4 pb-4 border-b">
                                 <div class="w-20 h-20 bg-gray-50 rounded-lg p-2 flex items-center justify-center border">
                                     <template x-if="selectedEquipment.image">
-                                        <img :src="selectedEquipment.image" class="max-h-full max-w-full object-contain">
+                                        <img :src="selectedEquipment.image" class="max-h-full max-w-full object-contain" onerror="this.src='/images/equipment-types/autre.png';">
                                     </template>
                                     <template x-if="!selectedEquipment.image">
                                         <span class="text-xs text-gray-400 text-center">Pas d'image</span>
@@ -363,6 +370,18 @@
                     this.editName = this.selectedType.name;
                 }
                 this.isEditing = false;
+            },
+
+            getTypeImageUrl(type) {
+                if (!type) return '/images/equipment-types/autre.png';
+                if (type.image && type.image.startsWith('http')) return type.image;
+                if (type.image) return '/storage/' + type.image;
+                
+                let slug = type.name.toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/(^-|-$)+/g, '');
+                return '/images/equipment-types/' + slug + '.png';
             }
         }" 
         x-show="open" 
@@ -399,8 +418,8 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Image associée</label>
-                            <input type="file" name="image" accept="image/*" required class="w-full text-xs text-gray-500 border border-gray-300 rounded-md p-1">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Image associée (Optionnelle)</label>
+                            <input type="file" name="image" accept="image/*" class="w-full text-xs text-gray-500 border border-gray-300 rounded-md p-1">
                         </div>
 
                         <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 font-semibold text-sm transition">
@@ -421,8 +440,10 @@
 
                         <template x-if="selectedType">
                             <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center gap-3">
-                                <!-- Affichage conditionnel de l'image (Cloudinary vs Local) -->
-                                <img :src="selectedType.image && selectedType.image.startsWith('http') ? selectedType.image : '/storage/' + selectedType.image" class="w-24 h-24 object-contain rounded border bg-white p-1">
+                                <!-- Affichage conditionnel de l'image (Cloudinary, Local ou fallback PNG) -->
+                                <img :src="getTypeImageUrl(selectedType)" 
+                                     class="w-24 h-24 object-contain rounded border bg-white p-1"
+                                     onerror="this.src='/images/equipment-types/autre.png';">
 
                                 <template x-if="!isEditing">
                                     <p class="font-bold text-sm text-gray-800" x-text="selectedType.name"></p>
