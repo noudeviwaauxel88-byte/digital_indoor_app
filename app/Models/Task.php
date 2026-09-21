@@ -13,14 +13,14 @@ class Task extends Model
         'project_id',
         'user_id',
         'title',
-        'description', // Nous allons réutiliser `title` pour la description principale
+        'description',
         'status',
         'priority',
         'start_date',
         'due_date',
-        'structure', // <-- AJOUTÉ
-        'module',    // <-- AJOUTÉ
-        'document_path', // <-- AJOUTÉ
+        'structure', // Permet l'assignation en masse
+        'module',    // Permet l'assignation en masse
+        'document_path', // Permet l'assignation en masse
     ];
 
     /**
@@ -40,8 +40,7 @@ class Task extends Model
     }
 
     public function user()
-{
-    return $this->belongsTo(User::class);
-}
-
+    {
+        return $this->belongsTo(User::class);
+    }
 }

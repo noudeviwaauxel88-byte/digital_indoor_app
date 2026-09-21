@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Indispensable pour vérifier le rôle
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class TaskController extends Controller
@@ -16,7 +16,7 @@ class TaskController extends Controller
      */
     public function store(Request $request, Project $project)
     {
-        // 1. SÉCURITÉ : On vérifie le rôle AVANT de faire quoi que ce soit
+        // 1. SÉCURITÉ : Vérification du rôle
         if (!Auth::user()->hasAnyRole(['SuperAdmin', 'Manager'])) {
             abort(403, 'Action refusée. Vous n\'avez pas les droits pour créer une tâche.');
         }
@@ -76,7 +76,6 @@ class TaskController extends Controller
 
         // Gestion du fichier en update (remplacement)
         if ($request->hasFile('document')) {
-            // Supprimer l'ancien fichier s'il existe
             if ($task->document_path) {
                 Storage::disk('public')->delete($task->document_path);
             }
@@ -106,7 +105,6 @@ class TaskController extends Controller
 
         $project = $task->project;
         
-        // Supprimer le document associé du stockage s'il existe
         if ($task->document_path) {
             Storage::disk('public')->delete($task->document_path);
         }
