@@ -67,7 +67,7 @@
                         @endif
                     </div>
                     
-                    @forelse ($projects as $project)
+                    @forelse ($projects->sortBy('name') as $project)
                         <div x-data="{ open: false }" class="relative flex items-center p-4 gap-4 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors group">
                             <a href="{{ route('projects.show', $project) }}" class="flex flex-1 items-center gap-4 min-w-0">
                                 <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-sm font-bold text-white shadow-sm" style="background-color: {{ $project->color ?? '#4b49ac' }};">
@@ -114,9 +114,9 @@
                                 </div>
                                 
                                 <div class="flex items-center -space-x-2">
-                                    @foreach($project->members->take(3) as $member)
+                                    @foreach($project->members->sortBy(fn($u) => $u->firstname ?? $u->name)->take(3) as $member)
                                         <div class="w-8 h-8 rounded-full border-2 border-white bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm" title="{{ $member->firstname }} {{ $member->lastname }}">
-                                            {{ strtoupper(substr($member->firstname, 0, 1)) }}
+                                            {{ strtoupper(substr($member->firstname ?? $member->name, 0, 1)) }}
                                         </div>
                                     @endforeach
                                     @if(count($project->members) > 3)

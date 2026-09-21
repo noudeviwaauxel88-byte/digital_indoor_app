@@ -5,14 +5,13 @@
         isShowModalOpen: false,
         selectedTask: null,
         
-        // CORRECTION IMPORTANTE : On utilise la variable $users (Tous les employés) 
-        // au lieu de $project->members pour permettre d'assigner n'importe qui.
+        // Membres triés par ordre alphabétique
         projectMembers: {{ Js::from($users) }}.map(u => ({
             id: u.id,
             name: u.firstname ? (u.firstname + ' ' + u.lastname) : u.name,
             email: u.email,
             initial: (u.firstname ? u.firstname.charAt(0) : u.name.charAt(0)).toUpperCase()
-        })),
+        })).sort((a, b) => a.name.localeCompare(b.name)),
 
         // Définition des Statuts avec Icônes et Textes (Français)
         statuses: {
@@ -99,7 +98,7 @@
                                 
                                 @if($task->assignees->count() > 0)
                                     <div class="flex -space-x-1">
-                                        @foreach($task->assignees->take(3) as $assignee)
+                                        @foreach($task->assignees->sortBy(fn($u) => $u->firstname ?? $u->name)->take(3) as $assignee)
                                             <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold border border-white" title="{{ $assignee->firstname }} {{ $assignee->lastname }}">
                                                 {{ substr($assignee->firstname ?? $assignee->name, 0, 1) }}
                                             </div>
@@ -306,7 +305,7 @@
                                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     <span class="font-medium text-gray-900">Assignés :</span>
                                     <div class="flex -space-x-1">
-                                        <template x-for="assignee in selectedTask.assignees">
+                                        <template x-for="assignee in (selectedTask.assignees ? selectedTask.assignees.sort((a, b) => (a.firstname || a.name).localeCompare(b.firstname || b.name)) : [])">
                                             <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold border border-white" :title="assignee.firstname + ' ' + assignee.lastname">
                                                 <span x-text="assignee.firstname ? assignee.firstname.charAt(0) : assignee.name.charAt(0)"></span>
                                             </div>
@@ -359,9 +358,9 @@
                                       assigneeQuery: '',
                                       selectedUsers: selectedTask.assignees ? selectedTask.assignees.map(u => ({
                                           id: u.id,
-                                          name: u.firstname + ' ' + u.lastname,
+                                          name: u.firstname ? (u.firstname + ' ' + u.lastname) : u.name,
                                           initial: u.firstname ? u.firstname.charAt(0) : u.name.charAt(0)
-                                      })) : [],
+                                      })).sort((a, b) => a.name.localeCompare(b.name)) : [],
                                       isAssigneeOpen: false,
                                       
                                       get filteredUsers() {
@@ -374,6 +373,7 @@
                                       },
                                       selectUser(user) {
                                           this.selectedUsers.push(user);
+                                          this.selectedUsers.sort((a, b) => a.name.localeCompare(b.name));
                                           this.assigneeQuery = '';
                                           this.isAssigneeOpen = false;
                                       },
