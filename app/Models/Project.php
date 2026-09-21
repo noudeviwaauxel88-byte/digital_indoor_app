@@ -39,7 +39,7 @@ class Project extends Model
     {
         return $this->belongsToMany(User::class, 'project_user')
                     ->orderBy('firstname')
-                    ->orderBy('name');
+                    ->orderBy('lastname');
     }
 
     public function tasks()
