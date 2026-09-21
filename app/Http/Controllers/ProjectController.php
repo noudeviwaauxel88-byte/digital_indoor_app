@@ -80,6 +80,7 @@ class ProjectController extends Controller
             'visibility'  => $validated['visibility'],
             'file_path'   => $filePath,
             'user_id'     => auth()->id(),
+            'status'      => 'in_progress',
         ]);
 
         if (!empty($validated['invited_users'])) {

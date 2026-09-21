@@ -18,6 +18,22 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div x-data="{ show: true }" 
+                 x-show="show" 
+                 x-init="setTimeout(() => show = false, 4000)"
+                 x-transition:leave="transition ease-in duration-300"
+                 x-transition:leave-start="opacity-100 transform translate-y-0"
+                 x-transition:leave-end="opacity-0 transform -translate-y-2"
+                 class="mx-6 sm:mx-10 mt-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>{{ session('error') }}</span>
+                </div>
+                <button @click="show = false" class="text-red-600 hover:text-red-900 font-bold">&times;</button>
+            </div>
+        @endif
+
         <div class="flex gap-8 px-6 sm:px-10 py-8">
             <div class="flex-1">
                 <!-- Header et Filtres -->
@@ -78,10 +94,10 @@
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <p class="font-semibold text-gray-800 truncate">{{ $project->name }}</p>
                                         
-                                        <!-- Badges Statut -->
+                                        <!-- Badges Statut (Utilisation de l'accesseur is_late) -->
                                         @if($project->status === 'completed')
                                             <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">Terminé</span>
-                                        @elseif($project->end_date && \Carbon\Carbon::parse($project->end_date)->isPast())
+                                        @elseif($project->is_late)
                                             <span class="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded">En retard</span>
                                         @else
                                             <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">En cours</span>
@@ -163,7 +179,7 @@
             </div>
         </div>
 
-        <!-- Panneau Latéral de Création (avec support d'upload de document) -->
+        <!-- Panneau Latéral de Création (avec support d'upload de document et invité(s)) -->
         <div x-show="isSlideOverOpen" @keydown.escape.window="isSlideOverOpen = false" x-cloak class="relative z-50">
             <div x-show="isSlideOverOpen" class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
             <div class="fixed inset-0 overflow-hidden">
@@ -191,24 +207,39 @@
                                         
                                         <div>
                                             <label for="structure" class="block text-sm font-medium text-gray-900">Structure / Département</label>
-                                            <input type="text" name="structure" id="structure" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">
+                                            <input type="text" name="structure" id="structure" value="{{ old('structure') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">
                                         </div>
                                         
                                         <div class="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label for="start_date" class="block text-sm font-medium text-gray-900">Date de début</label>
-                                                <input type="date" name="start_date" id="start_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">
+                                                <input type="date" name="start_date" id="start_date" value="{{ old('start_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">
                                             </div>
                                             <div>
                                                 <label for="end_date" class="block text-sm font-medium text-gray-900">Date d'échéance</label>
-                                                <input type="date" name="end_date" id="end_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">
+                                                <input type="date" name="end_date" id="end_date" value="{{ old('end_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">
                                             </div>
                                         </div>
 
                                         <div>
                                             <label for="description" class="block text-sm font-medium text-gray-900">Description</label>
-                                            <textarea name="description" id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm"></textarea>
+                                            <textarea name="description" id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">{{ old('description') }}</textarea>
                                         </div>
+
+                                        <!-- Sélection des membres/invités -->
+                                        @if(isset($users) && count($users) > 0)
+                                            <div>
+                                                <label for="invited_users" class="block text-sm font-medium text-gray-900 mb-1">Membres invités</label>
+                                                <select name="invited_users[]" id="invited_users" multiple class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">
+                                                    @foreach($users as $user)
+                                                        <option value="{{ $user->id }}" {{ in_array($user->id, old('invited_users', [])) ? 'selected' : '' }}>
+                                                            {{ $user->firstname }} {{ $user->lastname }} ({{ $user->email }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <p class="text-xs text-gray-500 mt-1">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs membres.</p>
+                                            </div>
+                                        @endif
 
                                         <div>
                                             <label for="document" class="block text-sm font-medium text-gray-900">Document joint (optionnel)</label>
@@ -219,10 +250,10 @@
                                             <label class="block text-sm font-medium text-gray-900 mb-2">Visibilité</label>
                                             <div class="space-y-2">
                                                 <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                    <input type="radio" name="visibility" value="private" checked class="text-[#4b49ac] focus:ring-[#4b49ac]"> Privé
+                                                    <input type="radio" name="visibility" value="private" {{ old('visibility', 'private') === 'private' ? 'checked' : '' }} class="text-[#4b49ac] focus:ring-[#4b49ac]"> Privé
                                                 </label>
                                                 <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                    <input type="radio" name="visibility" value="public" class="text-[#4b49ac] focus:ring-[#4b49ac]"> Public
+                                                    <input type="radio" name="visibility" value="public" {{ old('visibility') === 'public' ? 'checked' : '' }} class="text-[#4b49ac] focus:ring-[#4b49ac]"> Public
                                                 </label>
                                             </div>
                                         </div>

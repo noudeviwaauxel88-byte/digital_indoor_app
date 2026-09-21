@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Carbon\Carbon;
 
 class Project extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -22,6 +23,11 @@ class Project extends Model
         'visibility',
         'structure',
         'file_path',
+    ];
+
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
 
     public function creator()
@@ -41,10 +47,20 @@ class Project extends Model
         return $this->hasMany(Task::class);
     }
 
+    /**
+     * Accesseur dynamique pour vérifier si le projet est en retard.
+     */
+    public function getIsLateAttribute(): bool
+    {
+        return $this->status !== 'completed' 
+            && $this->end_date 
+            && Carbon::parse($this->end_date)->isPast();
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'description', 'status'])
+            ->logOnly(['name', 'description', 'status', 'structure', 'file_path'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
