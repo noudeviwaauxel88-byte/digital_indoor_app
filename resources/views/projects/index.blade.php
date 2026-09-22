@@ -94,7 +94,7 @@
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <p class="font-semibold text-gray-800 truncate">{{ $project->name }}</p>
                                         
-                                        <!-- Badges Statut (Utilisation de l'accesseur is_late) -->
+                                        <!-- Badges Statut -->
                                         @if($project->status === 'completed')
                                             <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">Terminé</span>
                                         @elseif($project->is_late)
@@ -130,9 +130,9 @@
                                 </div>
                                 
                                 <div class="flex items-center -space-x-2">
-                                    @foreach($project->members->sortBy(fn($u) => $u->firstname ?? $u->name)->take(3) as $member)
+                                    @foreach($project->members->sortBy(fn($u) => $u->firstname ?? $u->lastname)->take(3) as $member)
                                         <div class="w-8 h-8 rounded-full border-2 border-white bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold shadow-sm" title="{{ $member->firstname }} {{ $member->lastname }}">
-                                            {{ strtoupper(substr($member->firstname ?? $member->name, 0, 1)) }}
+                                            {{ strtoupper(substr($member->firstname ?? $member->lastname, 0, 1)) }}
                                         </div>
                                     @endforeach
                                     @if(count($project->members) > 3)
@@ -169,7 +169,7 @@
                     @empty
                         <div class="text-center p-12 flex flex-col items-center">
                             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                             </div>
                             <h3 class="text-lg font-medium text-gray-900">Aucun projet trouvé</h3>
                             <p class="text-gray-500 mt-1 mb-6 max-w-sm">Ajustez vos filtres ou créez un nouveau projet.</p>
@@ -179,7 +179,7 @@
             </div>
         </div>
 
-        <!-- Panneau Latéral de Création (avec support d'upload de document et invité(s)) -->
+        <!-- Panneau Latéral de Création avec Filtre dynamique et Visibilité -->
         <div x-show="isSlideOverOpen" @keydown.escape.window="isSlideOverOpen = false" x-cloak class="relative z-50">
             <div x-show="isSlideOverOpen" class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
             <div class="fixed inset-0 overflow-hidden">
@@ -187,7 +187,9 @@
                     <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
                         <div x-show="isSlideOverOpen" class="pointer-events-auto w-screen max-w-md">
                             
-                            <form method="POST" action="{{ route('projects.store') }}" enctype="multipart/form-data" class="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-2xl">
+                            <form method="POST" action="{{ route('projects.store') }}" enctype="multipart/form-data" 
+                                  x-data="{ visibility: '{{ old('visibility', 'private') }}' }" 
+                                  class="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-2xl">
                                 @csrf
                                 <div class="flex min-h-0 flex-1 flex-col overflow-y-scroll">
                                     <div class="bg-[#4b49ac] py-6 px-4 sm:px-6">
@@ -226,21 +228,6 @@
                                             <textarea name="description" id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">{{ old('description') }}</textarea>
                                         </div>
 
-                                        <!-- Sélection des membres/invités -->
-                                        @if(isset($users) && count($users) > 0)
-                                            <div>
-                                                <label for="invited_users" class="block text-sm font-medium text-gray-900 mb-1">Membres invités</label>
-                                                <select name="invited_users[]" id="invited_users" multiple class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4b49ac] focus:ring-[#4b49ac] sm:text-sm">
-                                                    @foreach($users as $user)
-                                                        <option value="{{ $user->id }}" {{ in_array($user->id, old('invited_users', [])) ? 'selected' : '' }}>
-                                                            {{ $user->firstname }} {{ $user->lastname }} ({{ $user->email }})
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                                <p class="text-xs text-gray-500 mt-1">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs membres.</p>
-                                            </div>
-                                        @endif
-
                                         <div>
                                             <label for="document" class="block text-sm font-medium text-gray-900">Document joint (optionnel)</label>
                                             <input type="file" name="document" id="document" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-[#4b49ac] hover:file:bg-indigo-100">
@@ -249,14 +236,94 @@
                                         <div>
                                             <label class="block text-sm font-medium text-gray-900 mb-2">Visibilité</label>
                                             <div class="space-y-2">
-                                                <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                    <input type="radio" name="visibility" value="private" {{ old('visibility', 'private') === 'private' ? 'checked' : '' }} class="text-[#4b49ac] focus:ring-[#4b49ac]"> Privé
+                                                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                                    <input type="radio" name="visibility" value="private" x-model="visibility" class="text-[#4b49ac] focus:ring-[#4b49ac]"> Privé
                                                 </label>
-                                                <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                    <input type="radio" name="visibility" value="public" {{ old('visibility') === 'public' ? 'checked' : '' }} class="text-[#4b49ac] focus:ring-[#4b49ac]"> Public
+                                                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                                    <input type="radio" name="visibility" value="public" x-model="visibility" class="text-[#4b49ac] focus:ring-[#4b49ac]"> Public
                                                 </label>
                                             </div>
                                         </div>
+
+                                        <!-- Champ Recherche & Sélection "Membres invités" (Uniquement si Visibilité = Privé) -->
+                                        <div x-show="visibility === 'private'" x-cloak x-transition class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-900">Membres invités</label>
+                                            
+                                            <div x-data="{
+                                                    open: false,
+                                                    search: '',
+                                                    selectedUsers: {{ json_encode(array_map('intval', old('invited_users', []))) }},
+                                                    users: {{ json_encode($users ?? []) }},
+                                                    get filteredUsers() {
+                                                        if (!this.search) return this.users;
+                                                        return this.users.filter(u => 
+                                                            ((u.firstname || '') + ' ' + (u.lastname || '')).toLowerCase().includes(this.search.toLowerCase()) ||
+                                                            u.email.toLowerCase().includes(this.search.toLowerCase())
+                                                        );
+                                                    },
+                                                    toggleUser(id) {
+                                                        if (this.selectedUsers.includes(id)) {
+                                                            this.selectedUsers = this.selectedUsers.filter(i => i !== id);
+                                                        } else {
+                                                            this.selectedUsers.push(id);
+                                                        }
+                                                    }
+                                                 }" 
+                                                 class="relative">
+                                                
+                                                <!-- Inputs masqués envoyés lors du submit -->
+                                                <template x-for="id in selectedUsers" :key="id">
+                                                    <input type="hidden" name="invited_users[]" :value="id">
+                                                </template>
+
+                                                <!-- Affichage des éléments sélectionnés / déclencheur -->
+                                                <div @click="open = !open" 
+                                                     class="w-full min-h-[42px] p-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer flex flex-wrap items-center gap-1.5 focus-within:border-[#4b49ac]">
+                                                    <template x-if="selectedUsers.length === 0">
+                                                        <span class="text-sm text-gray-400 pl-1">Sélectionner des membres...</span>
+                                                    </template>
+                                                    <template x-for="id in selectedUsers" :key="id">
+                                                        <span class="inline-flex items-center gap-1 bg-indigo-100 text-[#4b49ac] text-xs font-semibold px-2 py-1 rounded-md">
+                                                            <span x-text="users.find(u => u.id === id)?.firstname + ' ' + users.find(u => u.id === id)?.lastname"></span>
+                                                            <button type="button" @click.stop="toggleUser(id)" class="hover:text-red-600 font-bold ml-1">&times;</button>
+                                                        </span>
+                                                    </template>
+                                                </div>
+
+                                                <!-- Dropdown avec filtre de recherche -->
+                                                <div x-show="open" @click.away="open = false" x-cloak 
+                                                     class="absolute left-0 right-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto p-2">
+                                                    
+                                                    <div class="sticky top-0 bg-white pb-2 border-b border-gray-100">
+                                                        <input type="text" x-model="search" placeholder="Recherche..." 
+                                                               class="w-full text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:ring-[#4b49ac] focus:border-[#4b49ac]">
+                                                    </div>
+
+                                                    <div class="mt-2 space-y-1">
+                                                        <template x-for="user in filteredUsers" :key="user.id">
+                                                            <div @click="toggleUser(user.id)" 
+                                                                 class="flex items-center gap-3 p-2 hover:bg-indigo-50 rounded-md cursor-pointer transition-colors"
+                                                                 :class="selectedUsers.includes(user.id) ? 'bg-indigo-50' : ''">
+                                                                <div class="w-7 h-7 rounded-full bg-indigo-100 text-[#4b49ac] flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                                                    <span x-text="(user.firstname || user.lastname || 'U').substring(0,1).toUpperCase()"></span>
+                                                                </div>
+                                                                <div class="flex-1 min-w-0">
+                                                                    <p class="text-sm font-medium text-gray-800 truncate" x-text="(user.firstname || '') + ' ' + (user.lastname || '')"></p>
+                                                                    <p class="text-xs text-gray-400 truncate" x-text="user.email"></p>
+                                                                </div>
+                                                                <svg x-show="selectedUsers.includes(user.id)" class="w-4 h-4 text-[#4b49ac]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                                </svg>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="filteredUsers.length === 0">
+                                                            <p class="text-xs text-gray-400 text-center py-2">Aucun résultat trouvé.</p>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                                 

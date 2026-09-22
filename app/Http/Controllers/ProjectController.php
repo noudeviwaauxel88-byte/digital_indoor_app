@@ -26,7 +26,6 @@ class ProjectController extends Controller
             } elseif ($status === 'completed') {
                 $query->where('status', 'completed');
             } elseif ($status === 'late') {
-                // Projet considéré en retard si la date de fin est dépassée et que le statut n'est pas terminé
                 $query->where('status', '!=', 'completed')
                       ->whereNotNull('end_date')
                       ->where('end_date', '<', now());
@@ -83,7 +82,13 @@ class ProjectController extends Controller
             'status'      => 'in_progress',
         ]);
 
-        if (!empty($validated['invited_users'])) {
+        // Rattachement dynamique des membres
+        if ($validated['visibility'] === 'public') {
+            // Projet Public : attacher automatiquement TOUS les utilisateurs
+            $allUserIds = User::pluck('id')->toArray();
+            $project->members()->attach($allUserIds);
+        } elseif (!empty($validated['invited_users'])) {
+            // Projet Privé : attacher uniquement les invités sélectionnés
             $project->members()->attach($validated['invited_users']);
         }
 
@@ -144,9 +149,6 @@ class ProjectController extends Controller
             ->with('success', 'Projet supprimé avec succès.');
     }
 
-    /**
-     * Télécharge ou affiche le document joint du projet.
-     */
     public function downloadDocument(Project $project)
     {
         if (!$project->file_path || !Storage::disk('public')->exists($project->file_path)) {
