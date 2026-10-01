@@ -90,6 +90,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/equipments/stockout/{stockMovement}', [EquipmentController::class, 'destroyStockOut'])->name('equipments.stockout.destroy');
     Route::post('/equipments/stockout/{equipmentOut}/return', [EquipmentController::class, 'returnStockOut'])->name('equipments.stockout.return');
     
+    // Impression du Bon de Livraison (BL)
+    Route::get('/equipments/stockout/{equipmentOut}/bl', [EquipmentController::class, 'downloadBL'])->name('equipments.stockout.bl');
+
     // Types d'équipements
     Route::post('/equipment-types', [EquipmentTypeController::class, 'store'])->name('equipment-types.store');
     Route::put('/equipment-types/{equipmentType}', [EquipmentTypeController::class, 'update'])->name('equipment-types.update');

@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class EquipmentController extends Controller
 {
@@ -268,5 +269,20 @@ class EquipmentController extends Controller
         }
 
         return redirect()->back()->with('success', 'Type d\'équipement ajouté avec succès !');
+    }
+
+    /**
+     * Génère et télécharge le Bon de Livraison (BL) en format PDF.
+     */
+    public function downloadBL($equipmentOut)
+    {
+        $out = StockMovement::with(['equipmentItems.equipment', 'user', 'project'])->findOrFail($equipmentOut);
+
+        $pdf = Pdf::loadView('equipments.bl_pdf', compact('out'))
+                  ->setPaper('a4', 'portrait');
+
+        $fileName = 'BL_DIINC_' . str_pad($out->id, 4, '0', STR_PAD_LEFT) . '.pdf';
+
+        return $pdf->download($fileName);
     }
 }
