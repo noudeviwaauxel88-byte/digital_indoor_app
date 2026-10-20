@@ -18,13 +18,16 @@ class EquipmentController extends Controller
 {
     /**
      * Liste des équipements avec comptage du stock disponible.
+     * Affiche UNIQUEMENT les équipements ayant une quantité disponible strictement supérieure à 0.
      */
     public function index(Request $request)
     {
         $query = Equipment::with(['equipmentType', 'items'])
             ->withCount(['items as available_items_count' => function ($q) {
                 $q->where('status', 'en_stock');
-            }]);
+            }])
+            // Filtrer pour ne récupérer QUE les équipements qui ont au moins 1 article disponible en stock
+            ->having('available_items_count', '>', 0);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
