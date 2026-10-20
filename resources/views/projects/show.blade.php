@@ -17,7 +17,7 @@
             'in_progress': { label: 'En cours', icon: `<svg class='w-4 h-4 text-blue-500 animate-spin' fill='none' viewBox='0 0 24 24'><circle class='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' stroke-width='4'></circle><path class='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path></svg>` },
             'to_validate': { label: 'À valider', icon: `<svg class='w-4 h-4 text-orange-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' /></svg>` },
             'done': { label: 'Achevée', icon: `<svg class='w-4 h-4 text-green-500' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'/></svg>` },
-            'cancelled': { label: 'Annulée', icon: `<svg class='w-4 h-4 text-gray-400' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z' clip-rule='evenodd'/></svg>` }
+            'cancelled': { label: 'Annulée', icon: `<svg class='w-4 h-4 text-gray-400' fill='currentColor' viewBox='0 0 20 20'><path fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 101.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z' clip-rule='evenodd'/></svg>` }
         },
 
         priorities: {
@@ -45,7 +45,6 @@
                 <h1 class="text-3xl font-bold text-gray-800 truncate uppercase">{{ $project->name }}</h1>
                 <div class="flex items-center gap-4">
                     
-                    {{-- SÉCURITÉ : Visible pour SuperAdmin, Admin ou Manager --}}
                     @hasanyrole('SuperAdmin|Admin|Manager')
                     <button @click="isCreateModalOpen = true" class="px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 flex items-center gap-2 transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -66,7 +65,16 @@
 
         <!-- Tableau KANBAN -->
         <div class="px-6 sm:px-10 pb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            @php($columns = ['todo' => 'Non commencé', 'in_progress' => 'En cours', 'to_validate' => 'À valider', 'done' => 'Achevée', 'cancelled' => 'Annulée'])
+            @php
+                $columns = [
+                    'todo'        => 'Non commencé', 
+                    'in_progress' => 'En cours', 
+                    'to_validate' => 'À valider', 
+                    'done'        => 'Achevée', 
+                    'cancelled'   => 'Annulée'
+                ];
+            @endphp
+
             @foreach ($columns as $status =>$title)
             <div class="bg-[#F4F5F7] rounded-lg p-3 h-full">
                 <div class="flex justify-between items-center mb-3 px-1">
