@@ -97,7 +97,7 @@
                     Historique Sorties
                 </a>
                 
-                <!-- Barre de recherche -->
+                <!-- Barre de recherche (Accessible à tous) -->
                 <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2">
                     <div class="relative">
                         <input type="text" name="search" placeholder="Rechercher intitulé, type..." value="{{ request('search') }}" class="px-4 py-2 pl-9 border border-gray-300 rounded-lg w-56 sm:w-64 text-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -109,10 +109,12 @@
                     </div>
                 </form>
 
-                <!-- Bouton + Nouveau -->
+                <!-- Bouton + Nouveau (Réservé SuperAdmin, Admin, Manager) -->
+                @hasanyrole('SuperAdmin|Admin|Manager')
                 <button @click="isSlideOverOpen = true" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm text-sm transition">
                     + Nouveau
                 </button>
+                @endhasanyrole
             </div>
         </div>
 
@@ -202,7 +204,8 @@
                      class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between relative group hover:shadow-md transition cursor-pointer">
                     
                     <div>
-                        <!-- Menu Actions -->
+                        <!-- Menu Actions (Réservé SuperAdmin, Admin, Manager) -->
+                        @hasanyrole('SuperAdmin|Admin|Manager')
                         <div class="absolute top-3 right-3 z-10 no-print" x-data="{ openMenu: false }">
                             <button @click.stop="openMenu = !openMenu" @click.away="openMenu = false" class="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -220,6 +223,7 @@
                                 </form>
                             </div>
                         </div>
+                        @endhasanyrole
 
                         <!-- Image de l'équipement sécurisée contre la boucle de chargement -->
                         <div class="w-full h-44 bg-gray-50 flex items-center justify-center p-4 relative">
@@ -326,7 +330,8 @@
             </div>
         </div>
 
-        <!-- SLIDE-OVER : Ajouter un Équipement -->
+        <!-- SLIDE-OVER : Ajouter un Équipement (Réservé SuperAdmin, Admin, Manager) -->
+        @hasanyrole('SuperAdmin|Admin|Manager')
         <div x-show="isSlideOverOpen" class="fixed inset-0 z-50 overflow-hidden no-print" style="display: none;">
             <div class="absolute inset-0 bg-black/40 transition-opacity" @click="isSlideOverOpen = false"></div>
 
@@ -453,6 +458,7 @@
                 </div>
             </div>
         </div>
+        @endhasanyrole
 
     </div>
 </x-app-layout>

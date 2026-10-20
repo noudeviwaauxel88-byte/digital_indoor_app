@@ -17,7 +17,6 @@ class ProjectController extends Controller
         $query = Project::withCount('tasks')
             ->with('members');
 
-        // Filtrage par statut
         if ($request->filled('status')) {
             $status = $request->input('status');
             
@@ -32,7 +31,6 @@ class ProjectController extends Controller
             }
         }
 
-        // Recherche par mot-clé
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -53,6 +51,10 @@ class ProjectController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         $validated = $request->validate([
             'name'          => 'required|string|max:255',
             'structure'     => 'nullable|string|max:255',
@@ -82,13 +84,10 @@ class ProjectController extends Controller
             'status'      => 'in_progress',
         ]);
 
-        // Rattachement dynamique des membres
         if ($validated['visibility'] === 'public') {
-            // Projet Public : attacher automatiquement TOUS les utilisateurs
             $allUserIds = User::pluck('id')->toArray();
             $project->members()->attach($allUserIds);
         } elseif (!empty($validated['invited_users'])) {
-            // Projet Privé : attacher uniquement les invités sélectionnés
             $project->members()->attach($validated['invited_users']);
         }
 
@@ -109,11 +108,19 @@ class ProjectController extends Controller
 
     public function edit(Project $project)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         return view('projects.edit', compact('project'));
     }
 
     public function update(Request $request, Project $project)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         $validated = $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -139,6 +146,10 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         if ($project->file_path && Storage::disk('public')->exists($project->file_path)) {
             Storage::disk('public')->delete($project->file_path);
         }

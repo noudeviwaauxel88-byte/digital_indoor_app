@@ -18,7 +18,6 @@ class EquipmentController extends Controller
 {
     /**
      * Liste des équipements avec comptage du stock disponible.
-     * Compatible PostgreSQL & MySQL : Affiche uniquement les équipements ayant au moins 1 article 'en_stock'.
      */
     public function index(Request $request)
     {
@@ -26,7 +25,6 @@ class EquipmentController extends Controller
             ->withCount(['items as available_items_count' => function ($q) {
                 $q->where('status', 'en_stock');
             }])
-            // Filtrer les équipements qui ont au moins 1 élément avec status = 'en_stock'
             ->whereHas('items', function ($q) {
                 $q->where('status', 'en_stock');
             });
@@ -50,10 +48,14 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Enregistrer un nouvel équipement en stock avec ses numéros de série.
+     * Enregistrer un nouvel équipement en stock.
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         $validated = $request->validate([
             'equipment_type_id' => 'required|exists:equipment_types,id',
             'title'             => 'required|string|max:255',
@@ -66,7 +68,6 @@ class EquipmentController extends Controller
             'serial_numbers.*'  => 'required|string|distinct',
         ]);
 
-        // Assurer la cohérence avec le champ 'type' historique
         $typeObj = EquipmentType::findOrFail($request->equipment_type_id);
         $validated['type'] = $typeObj->name;
 
@@ -98,6 +99,10 @@ class EquipmentController extends Controller
      */
     public function createStockout(Equipment $equipment)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         $equipment->load('availableItems');
 
         $users = User::all()->sortBy(function ($user) {
@@ -114,6 +119,10 @@ class EquipmentController extends Controller
      */
     public function storeStockout(Request $request, Equipment $equipment)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         $validated = $request->validate([
             'movement_date'     => 'required|date',
             'user_id'           => 'required|exists:users,id',
@@ -170,6 +179,10 @@ class EquipmentController extends Controller
      */
     public function returnStockout(StockMovement $stockout)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         DB::transaction(function () use ($stockout) {
             foreach ($stockout->equipmentItems as $item) {
                 $item->update(['status' => 'en_stock']);
@@ -190,6 +203,10 @@ class EquipmentController extends Controller
      */
     public function destroy(Equipment $equipment)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         DB::transaction(function () use ($equipment) {
             if ($equipment->image_path) {
                 Storage::disk('public')->delete($equipment->image_path);
@@ -207,6 +224,10 @@ class EquipmentController extends Controller
      */
     public function edit(Equipment $equipment)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         $equipment->load('items');
         return view('equipments.edit', compact('equipment'));
     }
@@ -216,6 +237,10 @@ class EquipmentController extends Controller
      */
     public function update(Request $request, Equipment $equipment)
     {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
+            abort(403, 'Opération non autorisée.');
+        }
+
         $validated = $request->validate([
             'title'      => 'required|string|max:255',
             'type'       => 'required|string|max:255',
@@ -243,7 +268,7 @@ class EquipmentController extends Controller
      */
     public function storeType(Request $request)
     {
-        if (!auth()->user()->hasRole('SuperAdmin')) {
+        if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'Action non autorisée.'], 403);
             }

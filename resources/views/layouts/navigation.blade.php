@@ -28,10 +28,13 @@
                         {{ __('Fichiers') }}
                     </x-nav-link>
 
-                    {{-- MENU ADMIN : Visible seulement pour SuperAdmin --}}
+                    {{-- MENU ADMIN : Récurrence réservée exclusivement au SuperAdmin --}}
                     @role('SuperAdmin')
                     <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')" class="text-purple-600 font-bold">
                         {{ __('Utilisateurs') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('activity_logs.index')" :active="request()->routeIs('activity_logs.*')" class="text-purple-600 font-bold">
+                        {{ __('Historique (Logs)') }}
                     </x-nav-link>
                     @endrole
                 </div>
@@ -93,10 +96,25 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Tableau de Bord') }}
             </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
+                {{ __('Projets') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('equipments.index')" :active="request()->routeIs('equipments.*')">
+                {{ __('Stock') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('files.index')" :active="request()->routeIs('files.*')">
+                {{ __('Fichiers') }}
+            </x-responsive-nav-link>
             
             @role('SuperAdmin')
             <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                 {{ __('Gestion Utilisateurs') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('activity_logs.index')" :active="request()->routeIs('activity_logs.*')">
+                {{ __('Historique (Logs)') }}
             </x-responsive-nav-link>
             @endrole
         </div>
@@ -113,7 +131,6 @@
                     {{ __('Profil') }}
                 </x-responsive-nav-link>
 
-                <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <x-responsive-nav-link :href="route('logout')"
@@ -125,29 +142,4 @@
             </div>
         </div>
     </div>
-    
-    <div x-data="{ openStock: false }">
-    <!-- Bouton principal Stock -->
-    <button @click="openStock = !openStock" class="flex items-center justify-between w-full px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 rounded-lg">
-        <span class="flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-            <span>Stock</span>
-        </span>
-        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': openStock }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-    </button>
-
-    <!-- Sous-menu -->
-    <div x-show="openStock" x-collapse class="pl-8 mt-1 space-y-1">
-        <a href="{{ route('equipments.index') }}" class="block px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900">
-            Liste des équipements
-        </a>
-
-        {{-- Visible pour SuperAdmin, ADMIN ou Admin --}}
-        @hasanyrole('SuperAdmin', 'ADMIN', 'Admin')
-        <button @click="$dispatch('open-modal-add-type')" class="block w-full text-left px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
-            + Type équipement
-        </button>
-        @endhasanyrole
-    </div>
-</div>
 </nav>

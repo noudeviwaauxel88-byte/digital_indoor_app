@@ -1,8 +1,6 @@
 <x-app-layout>
-    {{-- Styles dédiés à l'impression --}}
     <style>
         @media print {
-            /* Masquer les éléments de navigation, boutons et colonnes d'actions */
             nav, header, sidebar, .no-print {
                 display: none !important;
             }
@@ -15,7 +13,6 @@
                 padding: 15mm;
             }
 
-            /* Réinitialiser les ombres et conteneurs pour le papier */
             .print-container {
                 box-shadow: none !important;
                 border: none !important;
@@ -47,7 +44,6 @@
     </style>
 
     <div class="px-6 sm:px-10 py-8 print-container">
-        {{-- En-tête de page (Masqué à l'impression pour le bloc d'action) --}}
         <div class="flex justify-between items-center mb-6 no-print">
             <div>
                 <h1 class="text-2xl font-semibold text-gray-800">Historique des sorties de stock</h1>
@@ -55,7 +51,6 @@
             </div>
             
             <div class="flex items-center gap-3">
-                {{-- Bouton Imprimer / Export --}}
                 <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm text-sm transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
@@ -69,7 +64,6 @@
             </div>
         </div>
 
-        {{-- Titre visible UNIQUEMENT à l'impression --}}
         <div class="hidden print:block mb-6">
             <h1 class="text-xl font-bold text-gray-900">Rapport d'Historique des Sorties de Stock</h1>
             <p class="text-xs text-gray-500">Généré le {{ date('d/m/Y à H:i') }}</p>
@@ -143,18 +137,18 @@
 
                                 <td class="py-3.5 px-4 text-right whitespace-nowrap no-print">
                                     <div class="inline-flex items-center gap-2">
-                                        {{-- Bouton Imprimer Bon de Livraison (BL) --}}
                                         <a href="{{ route('equipments.stockout.bl', $out) }}" target="_blank" class="px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold rounded-md transition-colors inline-flex items-center gap-1">
                                             📄 BL PDF
                                         </a>
 
-                                        {{-- Bouton Annuler la sortie --}}
+                                        @hasanyrole('SuperAdmin|Admin|Manager')
                                         <form method="POST" action="{{ route('equipments.stockout.return', $out) }}" onsubmit="return confirm('Voulez-vous annuler cette sortie et remettre les articles en stock ?');" class="inline-block">
                                             @csrf
                                             <button type="submit" class="px-3 py-1 bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 text-xs font-semibold rounded-md transition-colors">
                                                 Annuler la sortie
                                             </button>
                                         </form>
+                                        @endhasanyrole
                                     </div>
                                 </td>
                             </tr>

@@ -1,7 +1,6 @@
 <x-app-layout>
     <div x-data="{ isSlideOverOpen: {{ $errors->any() ? 'true' : 'false' }}, activeTab: 'informations' }">
 
-        <!-- Banner de notification Flash avec auto-disparition après 4 secondes -->
         @if (session('success'))
             <div x-data="{ show: true }" 
                  x-show="show" 
@@ -65,7 +64,8 @@
                             <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher..." class="pl-9 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-[#4b49ac] focus:border-[#4b49ac]">
                         </form>
 
-                        @hasanyrole('SuperAdmin|Manager')
+                        {{-- SEULES LES PERSONNES AUTORISÉES PEUVENT CRÉER UN PROJET --}}
+                        @hasanyrole('SuperAdmin|Admin|Manager')
                         <button @click="isSlideOverOpen = true" class="px-4 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 flex items-center gap-2 transition-colors text-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Créer projet
@@ -94,7 +94,6 @@
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <p class="font-semibold text-gray-800 truncate">{{ $project->name }}</p>
                                         
-                                        <!-- Badges Statut -->
                                         @if($project->status === 'completed')
                                             <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">Terminé</span>
                                         @elseif($project->is_late)
@@ -111,7 +110,6 @@
                                 </div>
                             </a>
 
-                            <!-- Lien Document Joint -->
                             @if($project->file_path)
                                 <a href="{{ route('projects.document', $project) }}" target="_blank" class="hidden sm:flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
@@ -141,7 +139,8 @@
                                 </div>
                             </div>
 
-                            @hasanyrole('SuperAdmin|Manager')
+                            {{-- SEULES LES PERSONNES AUTORISÉES VOIENT LE MENU D'EDITION --}}
+                            @hasanyrole('SuperAdmin|Admin|Manager')
                             <div class="relative">
                                 <button @click="open = !open" class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 11-4 0 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
@@ -169,7 +168,7 @@
                     @empty
                         <div class="text-center p-12 flex flex-col items-center">
                             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 002 2m-6 9l2 2 4-4"></path></svg>
                             </div>
                             <h3 class="text-lg font-medium text-gray-900">Aucun projet trouvé</h3>
                             <p class="text-gray-500 mt-1 mb-6 max-w-sm">Ajustez vos filtres ou créez un nouveau projet.</p>
@@ -179,14 +178,14 @@
             </div>
         </div>
 
-        <!-- Panneau Latéral de Création avec Filtre dynamique et Visibilité -->
+        @hasanyrole('SuperAdmin|Admin|Manager')
+        <!-- Panneau Latéral de Création (Masqué pour Employé) -->
         <div x-show="isSlideOverOpen" @keydown.escape.window="isSlideOverOpen = false" x-cloak class="relative z-50">
             <div x-show="isSlideOverOpen" class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"></div>
             <div class="fixed inset-0 overflow-hidden">
                 <div class="absolute inset-0 overflow-hidden">
                     <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
                         <div x-show="isSlideOverOpen" class="pointer-events-auto w-screen max-w-md">
-                            
                             <form method="POST" action="{{ route('projects.store') }}" enctype="multipart/form-data" 
                                   x-data="{ visibility: '{{ old('visibility', 'private') }}' }" 
                                   class="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-2xl">
@@ -245,7 +244,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- Champ Recherche & Sélection "Membres invités" (Uniquement si Visibilité = Privé) -->
                                         <div x-show="visibility === 'private'" x-cloak x-transition class="space-y-2">
                                             <label class="block text-sm font-medium text-gray-900">Membres invités</label>
                                             
@@ -271,12 +269,10 @@
                                                  }" 
                                                  class="relative">
                                                 
-                                                <!-- Inputs masqués envoyés lors du submit -->
                                                 <template x-for="id in selectedUsers" :key="id">
                                                     <input type="hidden" name="invited_users[]" :value="id">
                                                 </template>
 
-                                                <!-- Affichage des éléments sélectionnés / déclencheur -->
                                                 <div @click="open = !open" 
                                                      class="w-full min-h-[42px] p-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer flex flex-wrap items-center gap-1.5 focus-within:border-[#4b49ac]">
                                                     <template x-if="selectedUsers.length === 0">
@@ -290,7 +286,6 @@
                                                     </template>
                                                 </div>
 
-                                                <!-- Dropdown avec filtre de recherche -->
                                                 <div x-show="open" @click.away="open = false" x-cloak 
                                                      class="absolute left-0 right-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto p-2">
                                                     
@@ -337,6 +332,7 @@
                 </div>
             </div>
         </div>
+        @endhasanyrole
 
     </div>
 </x-app-layout>
