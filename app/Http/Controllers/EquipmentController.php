@@ -18,7 +18,7 @@ class EquipmentController extends Controller
 {
     /**
      * Liste des équipements avec comptage du stock disponible.
-     * Affiche UNIQUEMENT les équipements ayant une quantité disponible strictement supérieure à 0.
+     * Compatible PostgreSQL & MySQL : Affiche uniquement les équipements ayant au moins 1 article 'en_stock'.
      */
     public function index(Request $request)
     {
@@ -26,8 +26,10 @@ class EquipmentController extends Controller
             ->withCount(['items as available_items_count' => function ($q) {
                 $q->where('status', 'en_stock');
             }])
-            // Filtrer pour ne récupérer QUE les équipements qui ont au moins 1 article disponible en stock
-            ->having('available_items_count', '>', 0);
+            // Filtrer les équipements qui ont au moins 1 élément avec status = 'en_stock'
+            ->whereHas('items', function ($q) {
+                $q->where('status', 'en_stock');
+            });
 
         if ($request->filled('search')) {
             $search = $request->input('search');
