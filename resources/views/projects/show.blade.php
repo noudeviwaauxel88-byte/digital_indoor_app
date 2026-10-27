@@ -75,7 +75,7 @@
                 ];
             @endphp
 
-            @foreach ($columns as $status =>$title)
+            @foreach ($columns as $status => $title)
             <div class="bg-[#F4F5F7] rounded-lg p-3 h-full">
                 <div class="flex justify-between items-center mb-3 px-1">
                     <h3 class="font-semibold text-gray-600 text-sm flex items-center gap-2">
@@ -93,7 +93,7 @@
                 </div>
                 
                 <div class="space-y-3 min-h-[50px]">
-                    @foreach($project->tasks->where('status', $status) as$task)
+                    @foreach($project->tasks->where('status', $status) as $task)
                         <div @click="isShowModalOpen = true; selectedTask = {{ json_encode($task->load('assignees', 'project')) }}" 
                              class="cursor-pointer bg-white p-3 rounded shadow-sm border border-transparent hover:border-primary group transition-all">
                             
@@ -102,7 +102,7 @@
                                 
                                 @if($task->assignees->count() > 0)
                                     <div class="flex -space-x-1">
-                                        @foreach($task->assignees->sortBy(fn($u) =>$u->firstname ?? $u->name)->take(3) as$assignee)
+                                        @foreach($task->assignees->sortBy(fn($u) =>$u->firstname ?? $u->name)->take(3) as $assignee)
                                             <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold border border-white" title="{{ $assignee->firstname }} {{$assignee->lastname }}">
                                                 {{ substr($assignee->firstname ?? $assignee->name, 0, 1) }}
                                             </div>
