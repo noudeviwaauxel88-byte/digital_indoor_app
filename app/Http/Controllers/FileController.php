@@ -135,4 +135,22 @@ class FileController extends Controller
             ]
         };
     }
+
+    public function download(File $file)
+    {
+        $user = Auth::user();
+
+        // Vérification des droits d'accès si le fichier est privé
+        if ($file->is_private && $file->user_id !== $user->id && !$user->hasRole('SuperAdmin')) {
+            abort(403, 'Vous n\'avez pas accès à ce fichier privé.');
+        }
+
+        // Vérifier si le fichier existe physiquement sur le stockage public
+        if (!Storage::disk('public')->exists($file->path)) {
+            abort(404, 'Fichier introuvable sur le serveur.');
+        }
+
+        // Télécharger le fichier en conservant son nom d'origine
+        return Storage::disk('public')->download($file->path, $file->name);
+    }
 }
