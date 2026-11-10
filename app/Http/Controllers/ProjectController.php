@@ -10,12 +10,13 @@ use Illuminate\Support\Facades\Storage;
 class ProjectController extends Controller
 {
     /**
-     * Liste tous les projets avec filtrage par statut et recherche.
+     * Liste tous les projets avec filtrage par statut et recherche (optimisé).
      */
     public function index(Request $request)
     {
-        $query = Project::withCount('tasks')
-            ->with('members');
+        $query = Project::select('id', 'name', 'structure', 'start_date', 'end_date', 'description', 'visibility', 'status', 'created_at')
+            ->withCount('tasks')
+            ->with('members:id,firstname,lastname,email');
 
         if ($request->filled('status')) {
             $status = $request->input('status');
@@ -49,6 +50,9 @@ class ProjectController extends Controller
         return view('projects.index', compact('projects', 'users'));
     }
 
+    /**
+     * Enregistrer un nouveau projet.
+     */
     public function store(Request $request)
     {
         if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
@@ -95,9 +99,15 @@ class ProjectController extends Controller
             ->with('success', 'Projet créé avec succès.');
     }
 
+    /**
+     * Afficher les détails d'un projet et ses tâches (optimisé).
+     */
     public function show(Project $project)
     {
-        $project->load(['members', 'tasks.user']);
+        $project->load([
+            'members:id,firstname,lastname,email', 
+            'tasks.user:id,firstname,lastname,email'
+        ]);
 
         $users = User::select('id', 'firstname', 'lastname', 'email')
             ->orderBy('firstname')
@@ -106,6 +116,9 @@ class ProjectController extends Controller
         return view('projects.show', compact('project', 'users'));
     }
 
+    /**
+     * Formulaire d'édition d'un projet.
+     */
     public function edit(Project $project)
     {
         if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
@@ -115,6 +128,9 @@ class ProjectController extends Controller
         return view('projects.edit', compact('project'));
     }
 
+    /**
+     * Mettre à jour un projet.
+     */
     public function update(Request $request, Project $project)
     {
         if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
@@ -144,6 +160,9 @@ class ProjectController extends Controller
             ->with('success', 'Projet mis à jour avec succès.');
     }
 
+    /**
+     * Supprimer un projet.
+     */
     public function destroy(Project $project)
     {
         if (!auth()->user()->hasAnyRole(['SuperAdmin', 'Admin', 'Manager'])) {
@@ -160,6 +179,9 @@ class ProjectController extends Controller
             ->with('success', 'Projet supprimé avec succès.');
     }
 
+    /**
+     * Télécharger le document lié au projet.
+     */
     public function downloadDocument(Project $project)
     {
         if (!$project->file_path || !Storage::disk('public')->exists($project->file_path)) {

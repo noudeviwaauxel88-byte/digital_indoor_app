@@ -54,15 +54,22 @@
                         </form>
 
                         <!-- Barre de recherche -->
-                        <form method="GET" action="{{ route('projects.index') }}" class="relative">
-                            @if(request('status'))
-                                <input type="hidden" name="status" value="{{ request('status') }}">
-                            @endif
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                            </div>
-                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher..." class="pl-9 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-[#4b49ac] focus:border-[#4b49ac]">
-                        </form>
+                        <form action="{{ route('projects.index') }}" method="GET" class="flex items-center gap-2" x-data="{ search: '{{ request('search') }}' }">
+    <div class="relative">
+        <input type="text" 
+               name="search" 
+               x-model.debounce.300ms="search" 
+               @input="$el.form.submit()" 
+               placeholder="Rechercher un projet..." 
+               class="px-4 py-2 pl-9 border border-gray-300 rounded-lg w-56 sm:w-64 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+        
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+    </div>
+</form>
 
                         {{-- SEULES LES PERSONNES AUTORISÉES PEUVENT CRÉER UN PROJET --}}
                         @hasanyrole('SuperAdmin|Admin|Manager')

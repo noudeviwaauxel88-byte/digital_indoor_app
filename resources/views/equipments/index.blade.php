@@ -97,10 +97,17 @@
                     Historique Sorties
                 </a>
                 
-                <!-- Barre de recherche (Accessible à tous) -->
-                <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2">
+                <!-- Barre de recherche (Accessible à tous) avec Debounce -->
+                <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2" x-data="{ search: '{{ request('search') }}' }">
                     <div class="relative">
-                        <input type="text" name="search" placeholder="Rechercher intitulé, type..." value="{{ request('search') }}" class="px-4 py-2 pl-9 border border-gray-300 rounded-lg w-56 sm:w-64 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="text" 
+                               name="search" 
+                               x-model.debounce.300ms="search" 
+                               @input="$el.form.submit()" 
+                               placeholder="Rechercher intitulé, type..." 
+                               value="{{ request('search') }}"
+                               class="px-4 py-2 pl-9 border border-gray-300 rounded-lg w-56 sm:w-64 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -225,11 +232,12 @@
                         </div>
                         @endhasanyrole
 
-                        <!-- Image de l'équipement sécurisée contre la boucle de chargement -->
+                        <!-- Image de l'équipement avec LAZY LOADING -->
                         <div class="w-full h-44 bg-gray-50 flex items-center justify-center p-4 relative">
                             <img src="{{ $imageUrl }}" 
                                  alt="{{ $equipment->title ?? $equipment->name }}" 
                                  class="max-h-full max-w-full object-contain"
+                                 loading="lazy"
                                  onerror="if(!this.dataset.fallback){ this.dataset.fallback=true; this.src='/images/equipment-types/autre.png'; } else { this.style.display='none'; this.nextElementSibling.style.display='flex'; }">
                             
                             <!-- Placeholder SVG si aucune image n'est trouvée -->
@@ -280,6 +288,7 @@
                                 <div class="w-20 h-20 bg-gray-50 rounded-lg p-2 flex items-center justify-center border">
                                     <img :src="selectedEquipment.image" 
                                          class="max-h-full max-w-full object-contain" 
+                                         loading="lazy"
                                          onerror="if(!this.dataset.fallback){ this.dataset.fallback=true; this.src='/images/equipment-types/autre.png'; }">
                                 </div>
                                 <div>
@@ -392,11 +401,12 @@
                                     @endforeach
                                 </select>
 
-                                <!-- Aperçu dynamique du fichier local -->
+                                <!-- Aperçu dynamique du fichier local avec LAZY LOADING -->
                                 <template x-if="selectedTypeSlug">
                                     <div class="mt-2 p-2 border rounded-lg bg-gray-50 flex items-center gap-3">
                                         <img :src="'/images/equipment-types/' + selectedTypeSlug + '.png'" 
                                              class="w-12 h-12 object-contain"
+                                             loading="lazy"
                                              onerror="if(!this.dataset.fallback){ this.dataset.fallback=true; this.src='/images/equipment-types/autre.png'; }">
                                         <span class="text-xs text-gray-500">Image associée détectée</span>
                                     </div>

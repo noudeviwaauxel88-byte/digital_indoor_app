@@ -5,7 +5,7 @@
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold text-gray-800">Gestion des Utilisateurs</h1>
                 <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
-                    {{ $users->count() }} Utilisateurs
+                    {{ $users->total() }} Utilisateurs
                 </span>
             </div>
 
@@ -33,12 +33,12 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($users as $user)
+                            @forelse ($users as $user)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                                                {{ strtoupper(substr($user->firstname, 0, 1) . substr($user->lastname, 0, 1)) }}
+                                                {{ strtoupper(substr($user->firstname ?? 'U', 0, 1) . substr($user->lastname ?? 'S', 0, 1)) }}
                                             </div>
                                             <div class="ml-4">
                                                 <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
@@ -87,10 +87,23 @@
                                         @endif
                                     </td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                                        Aucun utilisateur trouvé.
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Liens de pagination -->
+                @if($users->hasPages())
+                    <div class="p-4 border-t border-gray-200">
+                        {{ $users->links() }}
+                    </div>
+                @endif
             </div>
         </div>
     </div>

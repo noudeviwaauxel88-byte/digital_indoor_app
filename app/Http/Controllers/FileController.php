@@ -10,17 +10,24 @@ use Illuminate\Support\Facades\Storage;
 
 class FileController extends Controller
 {
+    /**
+     * Liste des dossiers et fichiers de la racine (optimisé).
+     */
     public function index(Request $request)
     {
         $user = Auth::user();
 
-        $queryFolders = Folder::whereNull('parent_id')
+        // Sélection stricte des colonnes pour les dossiers
+        $queryFolders = Folder::select('id', 'user_id', 'parent_id', 'name', 'is_private', 'updated_at', 'created_at')
+            ->whereNull('parent_id')
             ->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                   ->orWhere('is_private', false);
             });
 
-        $queryFiles = File::whereNull('folder_id')
+        // Sélection stricte des colonnes pour les fichiers
+        $queryFiles = File::select('id', 'user_id', 'folder_id', 'name', 'path', 'mime_type', 'size', 'is_private', 'updated_at', 'created_at')
+            ->whereNull('folder_id')
             ->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                   ->orWhere('is_private', false);
@@ -28,13 +35,16 @@ class FileController extends Controller
 
         $this->applyFiltersAndSort($request, $queryFolders, $queryFiles);
 
-        $folders = $queryFolders->with('user')->get();
-        $files = $queryFiles->with('user')->get();
+        $folders = $queryFolders->with('user:id,name,firstname')->get();
+        $files = $queryFiles->with('user:id,name,firstname')->get();
         $itemsCount = $folders->count() + $files->count();
 
         return view('files.index', compact('folders', 'files', 'itemsCount'));
     }
 
+    /**
+     * Afficher le contenu d'un dossier spécifique (optimisé).
+     */
     public function show(Request $request, Folder $folder)
     {
         $user = Auth::user();
@@ -43,18 +53,24 @@ class FileController extends Controller
             abort(403, 'Vous n\'avez pas accès à ce dossier privé.');
         }
 
-        $queryFolders = Folder::where('parent_id', $folder->id);
-        $queryFiles = File::where('folder_id', $folder->id);
+        $queryFolders = Folder::select('id', 'user_id', 'parent_id', 'name', 'is_private', 'updated_at', 'created_at')
+            ->where('parent_id', $folder->id);
+
+        $queryFiles = File::select('id', 'user_id', 'folder_id', 'name', 'path', 'mime_type', 'size', 'is_private', 'updated_at', 'created_at')
+            ->where('folder_id', $folder->id);
 
         $this->applyFiltersAndSort($request, $queryFolders, $queryFiles);
 
-        $folders = $queryFolders->with('user')->get();
-        $files = $queryFiles->with('user')->get();
+        $folders = $queryFolders->with('user:id,name,firstname')->get();
+        $files = $queryFiles->with('user:id,name,firstname')->get();
         $itemsCount = $folders->count() + $files->count();
 
         return view('files.show', compact('folder', 'folders', 'files', 'itemsCount'));
     }
 
+    /**
+     * Enregistrer un nouveau fichier uploadé.
+     */
     public function storeFile(Request $request)
     {
         $request->validate([
@@ -79,6 +95,27 @@ class FileController extends Controller
         return back()->with('success', 'Fichier téléchargé avec succès.');
     }
 
+    /**
+     * Télécharger un fichier en toute sécurité.
+     */
+    public function download(File $file)
+    {
+        $user = Auth::user();
+
+        if ($file->is_private && $file->user_id !== $user->id && !$user->hasRole('SuperAdmin')) {
+            abort(403, 'Vous n\'avez pas accès à ce fichier privé.');
+        }
+
+        if (!Storage::disk('public')->exists($file->path)) {
+            abort(404, 'Fichier introuvable sur le serveur.');
+        }
+
+        return Storage::disk('public')->download($file->path, $file->name);
+    }
+
+    /**
+     * Appliquer les filtres et le tri de manière optimisée.
+     */
     private function applyFiltersAndSort(Request $request, $queryFolders, $queryFiles)
     {
         $direction = strtolower($request->input('direction')) === 'asc' ? 'asc' : 'desc';
@@ -113,6 +150,7 @@ class FileController extends Controller
             $queryFiles->where('name', 'like', "%{$search}%");
         }
 
+        // Tri autorisé
         $allowedSorts = ['Nom', 'Taille du fichier', 'Dernière ouverture', 'Date de téléchargement'];
         $sort = in_array($request->input('sort'), $allowedSorts) ? $request->input('sort') : 'Date de téléchargement';
 
@@ -134,23 +172,5 @@ class FileController extends Controller
                 $queryFiles->orderBy('created_at', $direction)
             ]
         };
-    }
-
-    public function download(File $file)
-    {
-        $user = Auth::user();
-
-        // Vérification des droits d'accès si le fichier est privé
-        if ($file->is_private && $file->user_id !== $user->id && !$user->hasRole('SuperAdmin')) {
-            abort(403, 'Vous n\'avez pas accès à ce fichier privé.');
-        }
-
-        // Vérifier si le fichier existe physiquement sur le stockage public
-        if (!Storage::disk('public')->exists($file->path)) {
-            abort(404, 'Fichier introuvable sur le serveur.');
-        }
-
-        // Télécharger le fichier en conservant son nom d'origine
-        return Storage::disk('public')->download($file->path, $file->name);
     }
 }

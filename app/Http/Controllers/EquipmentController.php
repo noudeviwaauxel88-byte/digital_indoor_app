@@ -10,6 +10,7 @@ use App\Models\StockMovement;
 use App\Models\StockMovementItem;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -18,10 +19,21 @@ class EquipmentController extends Controller
 {
     /**
      * Liste des équipements avec comptage du stock disponible.
+     * Optimisé avec sélection de colonnes strictes et cache Redis.
      */
     public function index(Request $request)
     {
-        $query = Equipment::with(['equipmentType', 'items'])
+        // Cache Redis des types d'équipements pour 1 heure (3600 secondes)
+        $equipmentTypes = Cache::remember('equipment_types_all', 3600, function () {
+            return EquipmentType::select('id', 'name', 'image')->get();
+        });
+
+        // Requête principale optimisée (sélection explicite des colonnes)
+        $query = Equipment::select('id', 'equipment_type_id', 'title', 'type', 'price', 'brand', 'image_path', 'features', 'entry_date')
+            ->with([
+                'equipmentType:id,name',
+                'items:id,equipment_id,serial_number,status'
+            ])
             ->withCount(['items as available_items_count' => function ($q) {
                 $q->where('status', 'en_stock');
             }])
@@ -42,7 +54,6 @@ class EquipmentController extends Controller
         }
 
         $equipments = $query->latest()->get();
-        $equipmentTypes = EquipmentType::all();
 
         return view('equipments.index', compact('equipments', 'equipmentTypes'));
     }
@@ -105,11 +116,13 @@ class EquipmentController extends Controller
 
         $equipment->load('availableItems');
 
-        $users = User::all()->sortBy(function ($user) {
-            return $user->name ?? $user->firstname ?? $user->id;
-        })->values();
+        $users = User::select('id', 'name', 'firstname', 'email')
+            ->get()
+            ->sortBy(function ($user) {
+                return $user->name ?? $user->firstname ?? $user->id;
+            })->values();
 
-        $projects = Project::orderBy('name')->get();
+        $projects = Project::select('id', 'name')->orderBy('name')->get();
 
         return view('equipments.stockout', compact('equipment', 'users', 'projects'));
     }
@@ -167,7 +180,7 @@ class EquipmentController extends Controller
      */
     public function stockoutHistory()
     {
-        $outs = StockMovement::with(['user', 'project', 'equipmentItems.equipment'])
+        $outs = StockMovement::with(['user:id,name,email', 'project:id,name', 'equipmentItems.equipment:id,title,type'])
             ->latest('movement_date')
             ->paginate(15);
 
@@ -264,7 +277,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Créer un nouveau type d'équipement via API JSON ou formulaire classique.
+     * Créer un nouveau type d'équipement et purger le cache Redis.
      */
     public function storeType(Request $request)
     {
@@ -289,6 +302,9 @@ class EquipmentController extends Controller
             'name'  => $request->name,
             'image' => $imagePath,
         ]);
+
+        // Nettoyage immédiat du cache Redis des types
+        Cache::forget('equipment_types_all');
 
         if ($request->wantsJson()) {
             return response()->json([
