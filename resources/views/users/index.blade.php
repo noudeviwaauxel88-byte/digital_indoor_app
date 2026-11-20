@@ -34,14 +34,22 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse ($users as $user)
+                                @php
+                                    $fullName = $user->name ?? trim(($user->firstname ?? '') . ' ' . ($user->lastname ?? ''));
+                                    $initials = strtoupper(
+                                        substr($user->firstname ?? ($fullName ?: 'U'), 0, 1) .
+                                        substr($user->lastname ?? (strlen($fullName) > 1 ? substr($fullName, -1) : 'S'), 0, 1)
+                                    );
+                                    $userRoleNames = $user->roles->pluck('name');
+                                @endphp
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                                                {{ strtoupper(substr($user->firstname ?? 'U', 0, 1) . substr($user->lastname ?? 'S', 0, 1)) }}
+                                                {{ $initials }}
                                             </div>
                                             <div class="ml-4">
-                                                <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
+                                                <div class="text-sm font-medium text-gray-900">{{ $fullName !== '' ? $fullName : 'Utilisateur' }}</div>
                                                 <div class="text-xs text-gray-500">{{ $user->job_title ?? 'Employé' }}</div>
                                             </div>
                                         </div>
@@ -67,7 +75,7 @@
                                                 @csrf @method('PATCH')
                                                 <select name="role" class="text-xs border-gray-300 rounded shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                                     @foreach($roles as $role)
-                                                        <option value="{{ $role->name }}" {{ $user->hasRole($role->name) ? 'selected' : '' }}>
+                                                        <option value="{{ $role->name }}" {{ $userRoleNames->contains($role->name) ? 'selected' : '' }}>
                                                             {{ $role->name }}
                                                         </option>
                                                     @endforeach

@@ -14,18 +14,18 @@ class UserController extends Controller
      */
     public function index()
     {
-        // Seul le SuperAdmin peut voir cette page
+        // Seul le SuperAdmin peut voir cette page[cite: 1, 12]
         if (!Auth::user()->hasRole('SuperAdmin')) {
             abort(403, 'Accès réservé aux administrateurs.');
         }
 
-        // Requête optimisée avec sélection de colonnes et pagination
-        $users = User::select('id', 'name', 'firstname', 'lastname', 'email', 'created_at')
+        // Requête optimisée avec sélection des colonnes existantes, eager loading et pagination
+        $users = User::select('id', 'firstname', 'lastname', 'job_title', 'email', 'created_at')
             ->with('roles:id,name')
             ->latest()
             ->paginate(15);
 
-        // Sélection optimisée pour les rôles
+        // Sélection optimisée pour les rôles[cite: 12]
         $roles = Role::select('id', 'name')->get();
 
         return view('users.index', compact('users', 'roles'));
@@ -44,7 +44,7 @@ class UserController extends Controller
             'role' => 'required|exists:roles,name',
         ]);
 
-        // On enlève les anciens rôles et on met le nouveau
+        // On enlève les anciens rôles et on met le nouveau[cite: 1, 12]
         $user->syncRoles([$request->role]);
 
         return back()->with('success', 'Rôle mis à jour avec succès.');
@@ -59,7 +59,7 @@ class UserController extends Controller
             abort(403);
         }
 
-        // Empêcher de se supprimer soi-même
+        // Empêcher de se supprimer soi-même[cite: 1, 12]
         if ($user->id === Auth::id()) {
             return back()->with('error', 'Vous ne pouvez pas supprimer votre propre compte.');
         }
