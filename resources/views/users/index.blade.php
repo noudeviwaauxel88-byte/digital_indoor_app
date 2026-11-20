@@ -35,7 +35,7 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse ($users as $user)
                                 @php
-                                    $fullName = $user->name ?? trim(($user->firstname ?? '') . ' ' . ($user->lastname ?? ''));
+                                    $fullName = trim(($user->firstname ?? '') . ' ' . ($user->lastname ?? ''));
                                     $initials = strtoupper(
                                         substr($user->firstname ?? ($fullName ?: 'U'), 0, 1) .
                                         substr($user->lastname ?? (strlen($fullName) > 1 ? substr($fullName, -1) : 'S'), 0, 1)
@@ -50,7 +50,7 @@
                                             </div>
                                             <div class="ml-4">
                                                 <div class="text-sm font-medium text-gray-900">{{ $fullName !== '' ? $fullName : 'Utilisateur' }}</div>
-                                                <div class="text-xs text-gray-500">{{ $user->job_title ?? 'Employé' }}</div>
+                                                <div class="text-xs text-gray-500">{{ $user->phone ?? 'Employé' }}</div>
                                             </div>
                                         </div>
                                     </td>
