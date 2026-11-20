@@ -19,16 +19,16 @@ class EquipmentController extends Controller
 {
     /**
      * Liste des équipements avec comptage du stock disponible.
-     * Optimisé avec sélection de colonnes strictes et cache Redis.
+     * Recherche indexée uniquement sur "Intitulé" (title) et "Type" (type / equipmentType.name).
      */
     public function index(Request $request)
     {
-        // Cache Redis des types d'équipements pour 1 heure (3600 secondes)
+        // Cache Redis des types d'équipements pour 1 heure (3600 secondes)[cite: 12]
         $equipmentTypes = Cache::remember('equipment_types_all', 3600, function () {
             return EquipmentType::select('id', 'name', 'image')->get();
         });
 
-        // Requête principale optimisée (sélection explicite des colonnes)
+        // Requête principale optimisée (sélection explicite des colonnes)[cite: 12]
         $query = Equipment::select('id', 'equipment_type_id', 'title', 'type', 'price', 'brand', 'image_path', 'features', 'entry_date')
             ->with([
                 'equipmentType:id,name',
@@ -41,14 +41,14 @@ class EquipmentController extends Controller
                 $q->where('status', 'en_stock');
             });
 
+        // Recherche ciblée sur Intitulé (title) et Type (type / equipmentType.name)
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = trim($request->input('search'));
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('type', 'like', "%{$search}%")
-                  ->orWhere('brand', 'like', "%{$search}%")
+                $q->where('title', 'ilike', "%{$search}%")
+                  ->orWhere('type', 'ilike', "%{$search}%")
                   ->orWhereHas('equipmentType', function ($t) use ($search) {
-                      $t->where('name', 'like', "%{$search}%");
+                      $t->where('name', 'ilike', "%{$search}%");
                   });
             });
         }
@@ -59,7 +59,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Enregistrer un nouvel équipement en stock.
+     * Enregistrer un nouvel équipement en stock[cite: 12].
      */
     public function store(Request $request)
     {
@@ -106,7 +106,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Formulaire de sortie de stock.
+     * Formulaire de sortie de stock[cite: 12].
      */
     public function createStockout(Equipment $equipment)
     {
@@ -128,7 +128,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Traitement de la sortie de stock.
+     * Traitement de la sortie de stock[cite: 12].
      */
     public function storeStockout(Request $request, Equipment $equipment)
     {
@@ -176,7 +176,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Historique des mouvements de sortie.
+     * Historique des mouvements de sortie[cite: 12].
      */
     public function stockoutHistory()
     {
@@ -188,7 +188,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Annuler une sortie de stock.
+     * Annuler une sortie de stock[cite: 12].
      */
     public function returnStockout(StockMovement $stockout)
     {
@@ -212,7 +212,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Supprimer un équipement et ses éléments associés.
+     * Supprimer un équipement et ses éléments associés[cite: 12].
      */
     public function destroy(Equipment $equipment)
     {
@@ -233,7 +233,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Formulaire d'édition d'un équipement.
+     * Formulaire d'édition d'un équipement[cite: 12].
      */
     public function edit(Equipment $equipment)
     {
@@ -246,7 +246,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Mise à jour d'un équipement.
+     * Mise à jour d'un équipement[cite: 12].
      */
     public function update(Request $request, Equipment $equipment)
     {
@@ -277,7 +277,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Créer un nouveau type d'équipement et purger le cache Redis.
+     * Créer un nouveau type d'équipement et purger le cache Redis[cite: 12].
      */
     public function storeType(Request $request)
     {
@@ -303,7 +303,7 @@ class EquipmentController extends Controller
             'image' => $imagePath,
         ]);
 
-        // Nettoyage immédiat du cache Redis des types
+        // Nettoyage immédiat du cache Redis des types[cite: 12]
         Cache::forget('equipment_types_all');
 
         if ($request->wantsJson()) {
@@ -318,7 +318,7 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Génère et télécharge le Bon de Livraison (BL) en format PDF.
+     * Génère et télécharge le Bon de Livraison (BL) en format PDF[cite: 12].
      */
     public function downloadBL($equipmentOut)
     {

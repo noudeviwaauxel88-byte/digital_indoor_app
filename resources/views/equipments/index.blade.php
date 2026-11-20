@@ -97,16 +97,15 @@
                     Historique Sorties
                 </a>
                 
-                <!-- Barre de recherche (Accessible à tous) avec Debounce -->
-                <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2" x-data="{ search: '{{ request('search') }}' }">
+                <!-- Barre de recherche indexée sur Type et Intitulé -->
+                <form action="{{ route('equipments.index') }}" method="GET" class="flex items-center gap-2" x-data="{ search: @js(request('search', '')) }">
                     <div class="relative">
                         <input type="text" 
                                name="search" 
-                               x-model.debounce.300ms="search" 
-                               @input="$el.form.submit()" 
-                               placeholder="Rechercher intitulé, type..." 
-                               value="{{ request('search') }}"
-                               class="px-4 py-2 pl-9 border border-gray-300 rounded-lg w-56 sm:w-64 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                               x-model="search" 
+                               @input.debounce.300ms="$el.form.submit()" 
+                               placeholder="Rechercher par intitulé ou type..." 
+                               class="px-4 py-2 pl-9 border border-gray-300 rounded-lg w-56 sm:w-72 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
