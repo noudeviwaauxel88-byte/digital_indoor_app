@@ -15,9 +15,9 @@
                     
                     {{-- Menu contextuel du dossier courant --}}
                     <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" @click.away="open = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+                        <button type="button" @click="open = !open" @click.away="open = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
                         <div x-show="open" class="absolute left-0 top-8 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-20 py-1" style="display: none;">
-                            <button @click="openRename('folder', {{ $folder->id }}, '{{ $folder->name }}')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                            <button type="button" @click="openRename('folder', {{ $folder->id }}, '{{ addslashes($folder->name) }}'); open = false" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Renommer
                             </button>
                             <div class="border-t border-gray-100 my-1"></div>
@@ -32,14 +32,14 @@
             
             <div class="flex items-center gap-3 w-full sm:w-auto">
                 <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" @click.away="open = false" class="px-4 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow hover:bg-[#4b49ac]/90 flex items-center gap-2 text-sm transition-colors">
+                    <button type="button" @click="open = !open" @click.away="open = false" class="px-4 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow hover:bg-[#4b49ac]/90 flex items-center gap-2 text-sm transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Ajouter nouveau
                     </button>
                     <div x-show="open" class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-20 py-1" style="display: none;">
-                        <button @click="isUploadModalOpen = true; open = false" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <button type="button" @click="isUploadModalOpen = true; open = false" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                             <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Télécharger un fichier
                         </button>
-                        <button @click="isCreateFolderModalOpen = true; open = false" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <button type="button" @click="isCreateFolderModalOpen = true; open = false" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                             <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg> Créer un dossier
                         </button>
                     </div>
@@ -51,6 +51,12 @@
                 </form>
             </div>
         </div>
+
+        @if(session('success'))
+            <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg text-sm">
+                {{ session('success') }}
+            </div>
+        @endif
 
         {{-- CONTENU PRINCIPAL --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[500px] p-4 relative">
@@ -70,8 +76,8 @@
                     </div>
                     <h2 class="text-xl font-bold text-gray-700 mb-2">Le dossier est vide !</h2>
                     <div class="flex justify-center gap-3 mt-6">
-                        <button @click="isUploadModalOpen = true" class="flex items-center gap-2 px-5 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow hover:bg-[#4b49ac]/90 transition-colors text-sm">Télécharger un fichier</button>
-                        <button @click="isCreateFolderModalOpen = true" class="flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 text-gray-700 font-semibold rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm">Créer un dossier</button>
+                        <button type="button" @click="isUploadModalOpen = true" class="flex items-center gap-2 px-5 py-2 bg-[#4b49ac] text-white font-semibold rounded-lg shadow hover:bg-[#4b49ac]/90 transition-colors text-sm">Télécharger un fichier</button>
+                        <button type="button" @click="isCreateFolderModalOpen = true" class="flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 text-gray-700 font-semibold rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm">Créer un dossier</button>
                     </div>
                 </div>
             @else
@@ -86,9 +92,18 @@
                                 <a href="{{ route('folders.show', $subFolder) }}" class="block p-3 border rounded-xl hover:border-purple-300 hover:shadow-md transition-all bg-gray-50">
                                     <div class="flex items-start justify-between mb-2">
                                         <svg class="w-8 h-8 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
-                                        <button @click.prevent="menuOpen = !menuOpen" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
-                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg>
-                                        </button>
+                                        <div class="flex items-center gap-1" @click.prevent.stop>
+                                            <form action="{{ route('files.destroy', ['type' => 'folder', 'id' => $subFolder->id]) }}" method="POST" onsubmit="return confirm('Supprimer ce dossier et tout son contenu ?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" title="Supprimer le dossier" class="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                </button>
+                                            </form>
+                                            <button type="button" @click="menuOpen = !menuOpen" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
+                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+                                            </button>
+                                        </div>
                                     </div>
                                     <h3 class="font-medium text-gray-800 truncate text-sm">{{ $subFolder->name }}</h3>
                                     <p class="text-[10px] text-gray-400 mt-1">{{ $subFolder->created_at->format('d/m/Y à H:i') }}</p>
@@ -96,7 +111,7 @@
 
                                 {{-- MENU CONTEXTUEL SOUS-DOSSIER --}}
                                 <div x-show="menuOpen" @click.away="menuOpen = false" class="absolute top-8 right-2 w-52 bg-white rounded-lg shadow-xl border border-gray-100 z-20 py-1" style="display: none;">
-                                    <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                    <button type="button" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Sélecteur
                                     </button>
                                     <form action="{{ route('files.favorite', ['type' => 'folder', 'id' => $subFolder->id]) }}" method="POST">
@@ -105,14 +120,14 @@
                                             <svg class="w-4 h-4 {{ $subFolder->is_favorite ? 'text-yellow-400 fill-current' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg> Ajouter aux favoris
                                         </button>
                                     </form>
-                                    <button @click="openRename('folder', {{ $subFolder->id }}, '{{ $subFolder->name }}')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                    <button type="button" @click="openRename('folder', {{ $subFolder->id }}, '{{ addslashes($subFolder->name) }}'); menuOpen = false" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Renommer
                                     </button>
-                                    <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                    <button type="button" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg> Partager le dossier
                                     </button>
                                     <div class="border-t border-gray-100 my-1"></div>
-                                    <form action="{{ route('files.destroy', ['type' => 'folder', 'id' => $subFolder->id]) }}" method="POST" onsubmit="return confirm('Supprimer ce dossier ?')">
+                                    <form action="{{ route('files.destroy', ['type' => 'folder', 'id' => $subFolder->id]) }}" method="POST" onsubmit="return confirm('Supprimer ce dossier et tout son contenu ?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Supprimer
@@ -124,14 +139,26 @@
 
                         {{-- FICHIERS --}}
                         @foreach($files as $file)
-                            <div @click="openPreview({{ json_encode($file) }})" class="p-3 bg-gray-50 border border-gray-100 rounded-xl flex items-center gap-3 hover:bg-white hover:shadow-sm transition-all cursor-pointer">
-                                <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm text-gray-500 border">
-                                    <span class="text-[10px] font-bold uppercase">{{ $file->type ?? 'DOC' }}</span>
+                            @php
+                                $ext = strtoupper(pathinfo($file->name, PATHINFO_EXTENSION) ?: 'DOC');
+                            @endphp
+                            <div @click="openPreview({{ json_encode($file) }})" class="p-3 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between gap-2 hover:bg-white hover:shadow-sm transition-all cursor-pointer">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm text-gray-500 border shrink-0">
+                                        <span class="text-[10px] font-bold uppercase">{{ $ext }}</span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-gray-800 truncate text-sm" title="{{ $file->name }}">{{ $file->name }}</p>
+                                        <p class="text-[10px] text-gray-400">{{ $file->created_at->format('d/m/Y') }}</p>
+                                    </div>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-medium text-gray-800 truncate text-sm" title="{{ $file->name }}">{{ $file->name }}</p>
-                                    <p class="text-[10px] text-gray-400">{{ $file->created_at->format('d/m/Y') }}</p>
-                                </div>
+                                <form action="{{ route('files.destroy', ['type' => 'file', 'id' => $file->id]) }}" method="POST" onsubmit="return confirm('Supprimer ce fichier ?')" @click.stop class="shrink-0">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" title="Supprimer le fichier" class="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </form>
                             </div>
                         @endforeach
                      </div>
@@ -145,7 +172,7 @@
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
                     <div @click.away="isCreateFolderModalOpen = false" class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl p-6">
-                        <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-900">Créer un dossier</h3><button @click="isCreateFolderModalOpen = false" class="text-gray-400 hover:text-gray-600">&times;</button></div>
+                        <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-900">Créer un dossier</h3><button type="button" @click="isCreateFolderModalOpen = false" class="text-gray-400 hover:text-gray-600">&times;</button></div>
                         <form action="{{ route('folders.store') }}" method="POST">
                             @csrf
                             <input type="hidden" name="parent_id" value="{{ $folder->id }}">
@@ -162,7 +189,7 @@
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
                     <div @click.away="isUploadModalOpen = false" class="relative w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
-                        <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold">Télécharger</h3><button @click="isUploadModalOpen = false">&times;</button></div>
+                        <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold">Télécharger</h3><button type="button" @click="isUploadModalOpen = false">&times;</button></div>
                         <form action="{{ route('files.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="folder_id" value="{{ $folder->id }}">
@@ -182,7 +209,7 @@
             <div class="fixed inset-0 bg-gray-900/50 transition-opacity"></div>
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto"><div class="flex min-h-full items-center justify-center p-4">
                 <div @click.away="isRenameModalOpen = false" class="relative w-full max-w-sm bg-white rounded-xl shadow-xl p-6">
-                    <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-900">Renommer</h3><button @click="isRenameModalOpen = false" class="text-gray-400">&times;</button></div>
+                    <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-900">Renommer</h3><button type="button" @click="isRenameModalOpen = false" class="text-gray-400">&times;</button></div>
                     <form x-bind:action="'/fichiers/rename/' + renameType + '/' + renameId" method="POST">
                         @csrf @method('PATCH')
                         <input type="text" name="name" x-model="renameName" class="w-full px-4 py-2 border rounded-lg text-sm mb-6" required>
@@ -202,7 +229,7 @@
                         {{-- HEADER PREVIEW --}}
                         <div class="flex justify-between items-center px-4 py-3 border-b border-gray-200 bg-white rounded-t-lg">
                             <div class="flex items-center gap-3 overflow-hidden">
-                                <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-500 shrink-0 font-bold text-xs" x-text="previewFile ? previewFile.type : ''"></div>
+                                <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-500 shrink-0 font-bold text-xs" x-text="previewFile ? (previewFile.name.split('.').pop() || 'DOC').toUpperCase() : ''"></div>
                                 <div class="min-w-0">
                                     <h3 class="text-sm font-semibold text-gray-800 truncate" x-text="previewFile ? previewFile.name : ''"></h3>
                                     <p class="text-xs text-gray-500">Mon Drive</p>
@@ -215,21 +242,21 @@
                                 
                                 {{-- Menu Fichier dans Preview --}}
                                 <div class="relative" x-data="{ fmOpen: false }">
-                                    <button @click="fmOpen = !fmOpen" class="p-1.5 hover:bg-gray-100 rounded text-gray-500"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+                                    <button type="button" @click="fmOpen = !fmOpen" class="p-1.5 hover:bg-gray-100 rounded text-gray-500"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
                                     <div x-show="fmOpen" @click.away="fmOpen = false" class="absolute right-0 mt-2 w-56 bg-white rounded shadow-xl border z-50 py-1">
                                         <form :action="'/fichiers/favorite/file/' + (previewFile ? previewFile.id : '')" method="POST">
-                                            @csrf @method('PATCH') <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg> Ajouter aux favoris</button>
+                                            @csrf @method('PATCH') <button type="submit" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg> Ajouter aux favoris</button>
                                         </form>
-                                        <button @click="openRename('file', previewFile.id, previewFile.name)" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Renommer</button>
-                                        <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg> Partager le fichier</button>
-                                        <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Informations sur le fichier</button>
+                                        <button type="button" @click="openRename('file', previewFile.id, previewFile.name); fmOpen = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Renommer</button>
+                                        <button type="button" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg> Partager le fichier</button>
+                                        <button type="button" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Informations sur le fichier</button>
                                         <div class="border-t border-gray-100 my-1"></div>
-                                        <form :action="'/fichiers/delete/file/' + (previewFile ? previewFile.id : '')" method="POST" onsubmit="return confirm('Supprimer ?')">
-                                            @csrf @method('DELETE') <button class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Supprimer</button>
+                                        <form :action="'/fichiers/delete/file/' + (previewFile ? previewFile.id : '')" method="POST" onsubmit="return confirm('Supprimer ce fichier ?')">
+                                            @csrf @method('DELETE') <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Supprimer</button>
                                         </form>
                                     </div>
                                 </div>
-                                <button @click="isPreviewModalOpen = false" class="p-1.5 hover:bg-gray-100 rounded text-gray-500">&times;</button>
+                                <button type="button" @click="isPreviewModalOpen = false" class="p-1.5 hover:bg-gray-100 rounded text-gray-500">&times;</button>
                             </div>
                         </div>
 
@@ -237,8 +264,8 @@
                         <div class="bg-gray-50 border-b border-gray-200 px-4 py-2 flex justify-between items-center">
                              <div class="flex items-center gap-2 text-gray-500 text-xs"><span>Page 1 de 1</span></div>
                              <div class="flex items-center gap-3 text-gray-500">
-                                 <div class="flex items-center bg-white border border-gray-300 rounded px-2 py-0.5 text-xs"><button @click="zoom -= 0.1">-</button><span class="mx-2" x-text="Math.round(zoom * 100) + '%'"></span><button @click="zoom += 0.1">+</button></div>
-                                 <button @click="printFile()" class="p-1 hover:bg-gray-200 rounded" title="Imprimer"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg></button>
+                                 <div class="flex items-center bg-white border border-gray-300 rounded px-2 py-0.5 text-xs"><button type="button" @click="zoom -= 0.1">-</button><span class="mx-2" x-text="Math.round(zoom * 100) + '%'"></span><button type="button" @click="zoom += 0.1">+</button></div>
+                                 <button type="button" @click="printFile()" class="p-1 hover:bg-gray-200 rounded" title="Imprimer"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg></button>
                              </div>
                         </div>
 
@@ -246,9 +273,9 @@
                         <div class="flex-1 bg-gray-100 overflow-auto flex items-center justify-center p-4" id="printArea">
                             <template x-if="previewFile">
                                 <div class="bg-white shadow-lg transition-transform origin-top" :style="'transform: scale(' + zoom + ')'">
-                                    <template x-if="['jpg','jpeg','png','gif'].includes(previewFile.type.toLowerCase())"><img :src="'/storage/' + previewFile.path" class="max-w-full max-h-[600px] object-contain"></template>
-                                    <template x-if="previewFile.type.toLowerCase() === 'pdf'"><iframe :src="'/storage/' + previewFile.path" class="w-[800px] h-[600px]"></iframe></template>
-                                    <template x-if="!['jpg','jpeg','png','gif','pdf'].includes(previewFile.type.toLowerCase())"><div class="p-20 text-center text-gray-500">Aperçu non disponible</div></template>
+                                    <template x-if="['jpg','jpeg','png','gif'].includes((previewFile.name.split('.').pop() || '').toLowerCase())"><img :src="'/storage/' + previewFile.path" class="max-w-full max-h-[600px] object-contain" loading="lazy"></template>
+                                    <template x-if="(previewFile.name.split('.').pop() || '').toLowerCase() === 'pdf'"><iframe :src="'/storage/' + previewFile.path" class="w-[800px] h-[600px]"></iframe></template>
+                                    <template x-if="!['jpg','jpeg','png','gif','pdf'].includes((previewFile.name.split('.').pop() || '').toLowerCase())"><div class="p-20 text-center text-gray-500">Aperçu non disponible</div></template>
                                 </div>
                             </template>
                         </div>

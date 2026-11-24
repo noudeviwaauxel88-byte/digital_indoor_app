@@ -6,6 +6,7 @@ use App\Models\File;
 use App\Models\Folder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class FileController extends Controller
@@ -17,7 +18,7 @@ class FileController extends Controller
     {
         $user = Auth::user();
 
-        // Sélection stricte des colonnes pour les dossiers
+        // Sélection stricte des colonnes pour les dossiers[cite: 19]
         $queryFolders = Folder::select('id', 'user_id', 'parent_id', 'name', 'is_private', 'updated_at', 'created_at')
             ->whereNull('parent_id')
             ->where(function ($q) use ($user) {
@@ -25,7 +26,7 @@ class FileController extends Controller
                   ->orWhere('is_private', false);
             });
 
-        // Sélection stricte des colonnes existantes pour les fichiers
+        // Sélection stricte des colonnes existantes pour les fichiers[cite: 19]
         $queryFiles = File::select('id', 'user_id', 'folder_id', 'name', 'path', 'size', 'is_private', 'updated_at', 'created_at')
             ->whereNull('folder_id')
             ->where(function ($q) use ($user) {
@@ -66,6 +67,27 @@ class FileController extends Controller
         $itemsCount = $folders->count() + $files->count();
 
         return view('files.show', compact('folder', 'folders', 'files', 'itemsCount'));
+    }
+
+    /**
+     * Créer un nouveau dossier.
+     */
+    public function storeFolder(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'parent_id' => 'nullable|exists:folders,id',
+            'is_private' => 'nullable|boolean',
+        ]);
+
+        Folder::create([
+            'name' => trim($validated['name']),
+            'parent_id' => $validated['parent_id'] ?? null,
+            'user_id' => Auth::id(),
+            'is_private' => $request->boolean('is_private', false),
+        ]);
+
+        return back()->with('success', 'Dossier créé avec succès.');
     }
 
     /**
@@ -113,6 +135,100 @@ class FileController extends Controller
     }
 
     /**
+     * Renommer un fichier ou un dossier.
+     */
+    public function rename(Request $request, string $type, int $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $user = Auth::user();
+
+        if ($type === 'folder') {
+            $folder = Folder::findOrFail($id);
+            if ($folder->user_id !== $user->id && !$user->hasAnyRole(['SuperAdmin', 'Admin'])) {
+                abort(403, 'Action non autorisée.');
+            }
+            $folder->update(['name' => trim($validated['name'])]);
+            return back()->with('success', 'Dossier renommé avec succès.');
+        }
+
+        if ($type === 'file') {
+            $file = File::findOrFail($id);
+            if ($file->user_id !== $user->id && !$user->hasAnyRole(['SuperAdmin', 'Admin'])) {
+                abort(403, 'Action non autorisée.');
+            }
+            $file->update(['name' => trim($validated['name'])]);
+            return back()->with('success', 'Fichier renommé avec succès.');
+        }
+
+        abort(400, 'Type invalide.');
+    }
+
+    /**
+     * Supprimer un fichier ou un dossier (avec suppression récursive du contenu).
+     */
+    public function destroy(string $type, int $id)
+    {
+        $user = Auth::user();
+
+        if ($type === 'file') {
+            $file = File::findOrFail($id);
+
+            if ($file->user_id !== $user->id && !$user->hasAnyRole(['SuperAdmin', 'Admin'])) {
+                abort(403, 'Vous n\'êtes pas autorisé à supprimer ce fichier.');
+            }
+
+            DB::transaction(function () use ($file) {
+                if ($file->path && Storage::disk('public')->exists($file->path)) {
+                    Storage::disk('public')->delete($file->path);
+                }
+                $file->delete();
+            });
+
+            return back()->with('success', 'Fichier supprimé avec succès.');
+        }
+
+        if ($type === 'folder') {
+            $folder = Folder::findOrFail($id);
+
+            if ($folder->user_id !== $user->id && !$user->hasAnyRole(['SuperAdmin', 'Admin'])) {
+                abort(403, 'Vous n\'êtes pas autorisé à supprimer ce dossier.');
+            }
+
+            DB::transaction(function () use ($folder) {
+                $this->deleteFolderRecursively($folder);
+            });
+
+            return back()->with('success', 'Dossier supprimé avec succès.');
+        }
+
+        abort(400, 'Type invalide.');
+    }
+
+    /**
+     * Helper récursif pour supprimer fichiers et sous-dossiers d'un dossier.
+     */
+    private function deleteFolderRecursively(Folder $folder): void
+    {
+        $files = File::where('folder_id', $folder->id)->get();
+        foreach ($files as $file) {
+            if ($file->path && Storage::disk('public')->exists($file->path)) {
+                Storage::disk('public')->delete($file->path);
+            }
+            $file->delete();
+        }
+
+        $subFolders = Folder::where('parent_id', $folder->id)->get();
+        foreach ($subFolders as $subFolder) {
+            $this->deleteFolderRecursively($subFolder);
+        }
+
+        $folder->delete();
+    }
+
+    /**
      * Appliquer les filtres et le tri de manière optimisée.
      */
     private function applyFiltersAndSort(Request $request, $queryFolders, $queryFiles)
@@ -149,7 +265,7 @@ class FileController extends Controller
             $queryFiles->where('name', 'ilike', "%{$search}%");
         }
 
-        // Tri autorisé
+        // Tri autorisé[cite: 19]
         $allowedSorts = ['Nom', 'Taille du fichier', 'Dernière ouverture', 'Date de téléchargement'];
         $sort = in_array($request->input('sort'), $allowedSorts) ? $request->input('sort') : 'Date de téléchargement';
 
