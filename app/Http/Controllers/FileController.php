@@ -25,8 +25,8 @@ class FileController extends Controller
                   ->orWhere('is_private', false);
             });
 
-        // Sélection stricte des colonnes pour les fichiers
-        $queryFiles = File::select('id', 'user_id', 'folder_id', 'name', 'path', 'mime_type', 'size', 'is_private', 'updated_at', 'created_at')
+        // Sélection stricte des colonnes existantes pour les fichiers
+        $queryFiles = File::select('id', 'user_id', 'folder_id', 'name', 'path', 'size', 'is_private', 'updated_at', 'created_at')
             ->whereNull('folder_id')
             ->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
@@ -35,8 +35,8 @@ class FileController extends Controller
 
         $this->applyFiltersAndSort($request, $queryFolders, $queryFiles);
 
-        $folders = $queryFolders->with('user:id,name,firstname')->get();
-        $files = $queryFiles->with('user:id,name,firstname')->get();
+        $folders = $queryFolders->with('user:id,firstname,lastname')->get();
+        $files = $queryFiles->with('user:id,firstname,lastname')->get();
         $itemsCount = $folders->count() + $files->count();
 
         return view('files.index', compact('folders', 'files', 'itemsCount'));
@@ -56,13 +56,13 @@ class FileController extends Controller
         $queryFolders = Folder::select('id', 'user_id', 'parent_id', 'name', 'is_private', 'updated_at', 'created_at')
             ->where('parent_id', $folder->id);
 
-        $queryFiles = File::select('id', 'user_id', 'folder_id', 'name', 'path', 'mime_type', 'size', 'is_private', 'updated_at', 'created_at')
+        $queryFiles = File::select('id', 'user_id', 'folder_id', 'name', 'path', 'size', 'is_private', 'updated_at', 'created_at')
             ->where('folder_id', $folder->id);
 
         $this->applyFiltersAndSort($request, $queryFolders, $queryFiles);
 
-        $folders = $queryFolders->with('user:id,name,firstname')->get();
-        $files = $queryFiles->with('user:id,name,firstname')->get();
+        $folders = $queryFolders->with('user:id,firstname,lastname')->get();
+        $files = $queryFiles->with('user:id,firstname,lastname')->get();
         $itemsCount = $folders->count() + $files->count();
 
         return view('files.show', compact('folder', 'folders', 'files', 'itemsCount'));
@@ -85,7 +85,6 @@ class FileController extends Controller
         File::create([
             'name' => $uploadedFile->getClientOriginalName(),
             'path' => $path,
-            'mime_type' => $uploadedFile->getClientMimeType(),
             'size' => $uploadedFile->getSize(),
             'folder_id' => $request->input('folder_id'),
             'user_id' => Auth::id(),
@@ -137,7 +136,7 @@ class FileController extends Controller
                 if (!empty($mimeGroup)) {
                     $queryFiles->where(function ($q) use ($mimeGroup) {
                         foreach ($mimeGroup as $ext) {
-                            $q->orWhere('name', 'like', "%.$ext");
+                            $q->orWhere('name', 'ilike', "%.$ext");
                         }
                     });
                 }
@@ -145,9 +144,9 @@ class FileController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $queryFolders->where('name', 'like', "%{$search}%");
-            $queryFiles->where('name', 'like', "%{$search}%");
+            $search = trim($request->input('search'));
+            $queryFolders->where('name', 'ilike', "%{$search}%");
+            $queryFiles->where('name', 'ilike', "%{$search}%");
         }
 
         // Tri autorisé
